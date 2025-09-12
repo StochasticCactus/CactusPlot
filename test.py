@@ -70,7 +70,11 @@ class XMGracePlotter:
             y_data = []
             
             with open(file_path, 'r') as file:
-                reader = csv.reader(file, delimiter=None, skipinitialspace=True)
+                try:
+                    reader = np.loadtxt(file, comments=["@", "#"])
+                except Exception as E:
+                    print(E)
+            
                 for line_num, row in enumerate(reader):
                     if len(row) >= 2:
                         try:
@@ -87,7 +91,7 @@ class XMGracePlotter:
                                 y_data.append(y_val)
                         except ValueError:
                             continue  # Skip invalid lines
-            
+
             if x_data and y_data:
                 filename = file_path.split('/')[-1].split('\\')[-1]
                 set_id = self.add_data_set(x_data, y_data, filename)
@@ -223,18 +227,19 @@ class XMGracePlotter:
         
         # File dialogs
         with dpg.file_dialog(directory_selector=False, show=False, callback=self.load_data_callback, 
-                           tag="file_dialog_load", width=700, height=400):
+                           tag="file_dialog_load", width=800, height=400):
             dpg.add_file_extension(".*")
             dpg.add_file_extension(".dat", color=[255, 255, 0, 255])
             dpg.add_file_extension(".txt", color=[0, 255, 255, 255])
             dpg.add_file_extension(".csv", color=[255, 0, 255, 255])
-        
+            dpg.add_file_extension(".xvg", color=[255, 0, 255, 255]) 
+
         with dpg.file_dialog(directory_selector=False, show=False, callback=self.save_data_callback,
                            tag="file_dialog_save", width=700, height=400, default_filename="data.dat"):
             dpg.add_file_extension(".dat", color=[255, 255, 0, 255])
             dpg.add_file_extension(".txt", color=[0, 255, 255, 255])
             dpg.add_file_extension(".csv", color=[255, 0, 255, 255])
-        
+            dpg.add_file_extension(".xvg", color=[255, 0, 255, 255])         
         # Main window
         with dpg.window(tag="main_window", label="XMGrace-style Plotter"):
             
@@ -254,9 +259,9 @@ class XMGracePlotter:
             with dpg.group(horizontal=True):
                 
                 # Left panel - Controls
-                with dpg.group(width=300):
+                with dpg.group(width=200):
                     dpg.add_text("Data Sets")
-                    dpg.add_listbox([], tag="data_listbox", width=280, num_items=8,
+                    dpg.add_listbox([], tag="data_listbox", width=180, num_items=8,
                                   callback=lambda: self.toggle_data_visibility())
                     
                     with dpg.group(horizontal=True):
@@ -266,13 +271,13 @@ class XMGracePlotter:
                     dpg.add_separator()
                     
                     dpg.add_text("Plot Controls")
-                    dpg.add_button(label="Auto Scale", callback=self.auto_scale, width=280)
+                    dpg.add_button(label="Auto Scale", callback=self.auto_scale, width=180)
                     
                     dpg.add_separator()
                     
                     dpg.add_text("Quick Function Generator")
                     dpg.add_input_text(label="f(x) = ", tag="function_input", 
-                                      default_value="sin(x)", width=200)
+                                      default_value="sin(x)", width=100)
                     
                     with dpg.group(horizontal=True):
                         dpg.add_input_double(label="X min", tag="x_min_input", 
@@ -281,12 +286,12 @@ class XMGracePlotter:
                                            default_value=10.0, width=80)
                     
                     dpg.add_input_int(label="Points", tag="n_points_input", 
-                                    default_value=100, width=200)
+                                    default_value=100, width=80)
                     dpg.add_button(label="Generate", callback=self.generate_function_data, width=280)
                 
                 # Right panel - Plot
                 with dpg.group():
-                    with dpg.plot(label="Plot", height=600, width=800, tag="main_plot"):
+                    with dpg.plot(label="Plot", height=800, width=800, tag="main_plot"):
                         dpg.add_plot_legend()
                         dpg.add_plot_axis(dpg.mvXAxis, label="X", tag="x_axis")
                         dpg.add_plot_axis(dpg.mvYAxis, label="Y", tag="y_axis")
