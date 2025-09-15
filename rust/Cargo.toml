@@ -1,0 +1,12 @@
+[package]
+name = "my_plotter"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+eframe = "0.27"
+csv = "1.2"
+rfd = "0.14"
+egui = "0.27"
+egui_plot = "0.27"
+serde = { version = "1.0", features = ["derive"] }
