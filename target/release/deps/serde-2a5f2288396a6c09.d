@@ -1,0 +1,11 @@
+/Users/tarcillo/Desktop/CactusPlot/rust/target/release/deps/serde-2a5f2288396a6c09.d: /Users/tarcillo/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.223/src/lib.rs /Users/tarcillo/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.223/src/integer128.rs /Users/tarcillo/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.223/src/private/mod.rs /Users/tarcillo/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.223/src/private/de.rs /Users/tarcillo/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.223/src/private/ser.rs
+
+/Users/tarcillo/Desktop/CactusPlot/rust/target/release/deps/libserde-2a5f2288396a6c09.rlib: /Users/tarcillo/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.223/src/lib.rs /Users/tarcillo/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.223/src/integer128.rs /Users/tarcillo/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.223/src/private/mod.rs /Users/tarcillo/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.223/src/private/de.rs /Users/tarcillo/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.223/src/private/ser.rs
+
+/Users/tarcillo/Desktop/CactusPlot/rust/target/release/deps/libserde-2a5f2288396a6c09.rmeta: /Users/tarcillo/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.223/src/lib.rs /Users/tarcillo/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.223/src/integer128.rs /Users/tarcillo/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.223/src/private/mod.rs /Users/tarcillo/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.223/src/private/de.rs /Users/tarcillo/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.223/src/private/ser.rs
+
+/Users/tarcillo/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.223/src/lib.rs:
+/Users/tarcillo/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.223/src/integer128.rs:
+/Users/tarcillo/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.223/src/private/mod.rs:
+/Users/tarcillo/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.223/src/private/de.rs:
+/Users/tarcillo/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.223/src/private/ser.rs:
