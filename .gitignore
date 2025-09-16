@@ -1,5 +1,5 @@
 #Rust
-rust/target
+target/
 # Python-generated files
 __pycache__/
 *.py[oc]
