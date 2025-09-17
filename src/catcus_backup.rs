@@ -1,22 +1,6 @@
-use clap::Parser;
 use eframe::{egui, App, Frame};
 use egui_plot::{Legend, Line, Plot, PlotPoints};
-use rand::prelude::*;
-use rand::thread_rng;
 use std::path::PathBuf;
-
-#[derive(Parser)]
-#[command(name = "CactusPlot")]
-#[command(about = "A simple but elegant plotting application")]
-struct Args {
-    files: Vec<String>,
-
-    #[arg(long)]
-    grid: bool,
-
-    #[arg(long)]
-    no_legend: bool,
-}
 
 struct Dataset {
     name: String,
@@ -33,9 +17,27 @@ struct PlotterApp {
 
 impl Default for PlotterApp {
     fn default() -> Self {
-        // Start with empty datasets instead of sine/cosine
+        // default with a sample sine and cosine
+        let mut datasets = Vec::new();
+        let n = 200usize;
+        let mut sin_points = Vec::with_capacity(n);
+        let mut cos_points = Vec::with_capacity(n);
+        for i in 0..n {
+            let x = i as f64 / (n as f64) * 10.0 - 5.0;
+            sin_points.push([x, (x).sin()]);
+            cos_points.push([x, (x).cos()]);
+        }
+        datasets.push(Dataset {
+            name: "sin(x)".to_owned(),
+            points: sin_points,
+        });
+        datasets.push(Dataset {
+            name: "cos(x)".to_owned(),
+            points: cos_points,
+        });
+
         Self {
-            datasets: Vec::new(),
+            datasets,
             show_grid: false,
             show_legend: true,
             next_name_index: 1,
@@ -74,13 +76,12 @@ impl App for PlotterApp {
 
                 ui.separator();
                 if ui.button("Add random").clicked() {
-                    // Generate truly random dataset
-                    let mut rng = thread_rng();
+                    // add a quick random-ish dataset
                     let mut pts = Vec::new();
                     let n = 120usize;
                     for i in 0..n {
                         let x = i as f64 / n as f64 * 10.0;
-                        let y = rng.gen_range(-2.0..2.0); // Random y values between -2 and 2
+                        let y = (x * 0.5).sin() + (i as f64 % 7.0) * 0.05;
                         pts.push([x, y]);
                     }
                     let name = format!("random{}", self.next_name_index);
@@ -150,6 +151,7 @@ impl App for PlotterApp {
     }
 }
 
+
 // Helper: load CSV with two columns (x,y). Skips rows that fail to parse.
 fn load_csv_points(path: &PathBuf) -> Result<Vec<[f64; 2]>, Box<dyn std::error::Error>> {
     let mut rdr = csv::Reader::from_path(path)?;
@@ -178,26 +180,11 @@ fn pick_csv_file() -> Option<PathBuf> {
 }
 
 fn main() {
-    let args = Args::parse();
     let options = eframe::NativeOptions::default();
     eframe::run_native(
         "CactusPlot",
         options,
-        Box::new(move |_cc| {
-            let mut app = PlotterApp::default();
-            app.show_legend = !args.no_legend;
-
-            for file in args.files {
-                if let Ok(points) = load_csv_points(&PathBuf::from(&file)) {
-                    app.datasets.push(Dataset {
-                        name: file.clone(),
-                        points,
-                    });
-
-                    app.next_name_index += 1
-                }
-            }
-            Box::new(app)
-        }),
-    ).unwrap();
+        Box::new(|_cc| Box::new(PlotterApp::default())),
+    )
+    .unwrap();
 }
