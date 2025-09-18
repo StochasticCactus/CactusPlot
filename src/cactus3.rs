@@ -190,7 +190,7 @@ impl App for PlotterApp {
                 ui.vertical(|ui| {
                     let mut plot = Plot::new("main_plot")
                         .view_aspect(2.0)
-                        .height(500.0)
+                        .height(600.0)
                         .width(ui.available_width())
                         .show_axes([true, true])
                         .show_grid([self.show_grid, self.show_grid]);
@@ -388,16 +388,7 @@ fn draw_axis_labels(img: &mut image::RgbImage, min_x: f64, max_x: f64, min_y: f6
         }
         
         let data_x = min_x + (max_x - min_x) * (i as f64 / num_x_ticks as f64);
-        
-        // Center the label under the tick mark
-        let text = format_number(data_x);
-        let text_width = text.len() as u32 * 6; // 6 pixels per character
-        let label_x = if x_pos >= text_width / 2 {
-            x_pos - text_width / 2
-        } else {
-            0
-        };
-        draw_number_pixels(img, label_x, tick_y + 15, data_x, color);
+        draw_number_pixels(img, x_pos, tick_y + 15, data_x, color);
     }
     
     // Y-axis ticks and labels
@@ -414,21 +405,12 @@ fn draw_axis_labels(img: &mut image::RgbImage, min_x: f64, max_x: f64, min_y: f6
         }
         
         let data_y = min_y + (max_y - min_y) * (i as f64 / num_y_ticks as f64);
-        
-        // Right-align the Y labels to the left of the axis
-        let text = format_number(data_y);
-        let text_width = text.len() as u32 * 6;
-        let label_x = if tick_x >= text_width + 10 {
-            tick_x - text_width - 10
-        } else {
-            0
-        };
-        draw_number_pixels(img, label_x, y_pos.saturating_sub(3), data_y, color);
+        draw_number_pixels(img, tick_x - 50, y_pos, data_y, color);
     }
 }
 
-fn format_number(value: f64) -> String {
-    if value.abs() < 0.001 && value.abs() > f64::EPSILON {
+fn draw_number_pixels(img: &mut image::RgbImage, x: u32, y: u32, value: f64, color: image::Rgb<u8>) {
+    let text = if value.abs() < 0.001 && value.abs() > f64::EPSILON {
         format!("{:.1e}", value)
     } else if value.abs() >= 1000.0 {
         format!("{:.0}", value)
@@ -436,11 +418,7 @@ fn format_number(value: f64) -> String {
         format!("{:.0}", value)
     } else {
         format!("{:.1}", value)
-    }
-}
-
-fn draw_number_pixels(img: &mut image::RgbImage, x: u32, y: u32, value: f64, color: image::Rgb<u8>) {
-    let text = format_number(value);
+    };
     
     for (i, ch) in text.chars().enumerate() {
         let char_x = x + (i as u32 * 6);
