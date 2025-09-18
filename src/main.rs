@@ -29,6 +29,7 @@ struct PlotterApp {
     show_legend: bool,
     next_name_index: usize,
     error_message: Option<String>,
+    dark_mode: bool,
 }
 
 impl Default for PlotterApp {
@@ -40,12 +41,20 @@ impl Default for PlotterApp {
             show_legend: true,
             next_name_index: 1,
             error_message: None,
+            dark_mode: true,
         }
     }
 }
 
 impl App for PlotterApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut Frame) {
+        
+        if self.dark_mode{
+            ctx.set_visuals(egui::Visuals::dark())
+        } else {
+            ctx.set_visuals(egui::Visuals::light());
+        }
+
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 if ui.button("Open CSV").clicked() {
@@ -72,9 +81,40 @@ impl App for PlotterApp {
                 ui.checkbox(&mut self.show_grid, "Grid");
                 ui.checkbox(&mut self.show_legend, "Legend");
 
+                ui.horizontal(|ui| {
+                    
+                    ui.label("Dark Mode:");
+                    let switch_size = egui::vec2(40.0, 20.0);
+                    let (rect, response) = ui.allocate_exact_size(switch_size, egui::Sense::click());
+                    if response.clicked(){
+                        self.dark_mode = !self.dark_mode;
+                    }
+                    
+                    let visuals = ui.style().interact(&response);
+                    let bg_color = if self.dark_mode {
+                        egui::Color32::from_rgb(0, 120, 215)
+                    } else {
+                        egui::Color32::from_rgb(200, 200, 200)
+                    };
+
+                    ui.painter().rect_filled(rect, switch_size.y * 0.5, bg_color);
+
+                    let handle_radius = switch_size.y * 0.4;
+                    let handle_center = if self.dark_mode {
+                        egui::pos2(rect.max.x - handle_radius * 1.2, rect.center().y)     
+                    } else {
+                        egui::pos2(rect.min.x + handle_radius * 1.2, rect.center().y)
+
+                    };
+                    
+                    ui.painter().circle_filled(handle_center, handle_radius, egui::Color32::WHITE);
+
+                });
+
+
                 ui.separator();
                 if ui.button("Add random").clicked() {
-                    // Generate truly random dataset
+                    // Generate truly random dataset/
                     let mut rng = thread_rng();
                     let mut pts = Vec::new();
                     let n = 120usize;
@@ -128,16 +168,14 @@ impl App for PlotterApp {
                 // Plot on the right - takes remaining space
                 ui.vertical(|ui| {
                     let mut plot = Plot::new("main_plot")
-                        .height(400.0)
-                        .width(ui.available_width());
-
+                        .height(500.0)
+                        .width(ui.available_width())
+                        .show_axes([true, true])
+                        .show_grid([false, false]);
                     if self.show_legend {
                         plot = plot.legend(Legend::default());
                     }
-                    if self.show_grid {
-                        plot = plot.show_axes([true, true]);
-                    }
-
+                    
                     plot.show(ui, |plot_ui| {
                         for ds in &self.datasets {
                             let line = Line::new(PlotPoints::new(ds.points.clone())).name(&ds.name);
@@ -178,12 +216,16 @@ fn pick_csv_file() -> Option<PathBuf> {
 }
 
 fn main() {
+
     let args = Args::parse();
-    let options = eframe::NativeOptions::default();
+    let mut options = eframe::NativeOptions::default();
+    options.default_theme = eframe::Theme::Light;
+
     eframe::run_native(
         "CactusPlot",
         options,
         Box::new(move |_cc| {
+
             let mut app = PlotterApp::default();
             app.show_legend = !args.no_legend;
 
