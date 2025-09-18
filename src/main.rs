@@ -33,6 +33,7 @@ struct PlotterApp {
     error_message: Option<String>,
     dark_mode: bool,
     screenshot_requested: bool,
+    last_bounds: Option<egui_plot::PlotBounds>,
 }
 
 impl Default for PlotterApp {
@@ -46,6 +47,7 @@ impl Default for PlotterApp {
             error_message: None,
             dark_mode: true,
             screenshot_requested: false,
+            last_bounds: None,
         }
     }
 }
@@ -96,7 +98,12 @@ impl App for PlotterApp {
                 }
 
                 if ui.button("Export Plot as PNG").clicked() {
-                    match export_plot_as_png(&self.datasets, self.dark_mode, self.show_grid) {
+                    match export_plot_as_png(
+                        &self.datasets,
+                        self.dark_mode,
+                        self.show_grid,
+                        self.last_bounds,
+                    ) {
                         Ok(()) => {
                             self.error_message = Some("Plot exported successfully!".to_string())
                         }
@@ -202,10 +209,13 @@ impl App for PlotterApp {
                     }
 
                     plot.show(ui, |plot_ui| {
+
                         for ds in &self.datasets {
                             let line = Line::new(PlotPoints::new(ds.points.clone())).name(&ds.name);
                             plot_ui.line(line);
                         }
+                        self.last_bounds = Some(*plot_ui.transform().bounds());
+                        //self.last_bounds = Some(plot_ui.plot_bounds());
                     });
                 });
             });
@@ -218,6 +228,7 @@ fn export_plot_as_png(
     datasets: &[Dataset],
     dark_mode: bool,
     show_grid: bool,
+    bounds: Option<egui_plot::PlotBounds>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if datasets.is_empty() {
         return Err("No data to export".into());
@@ -254,31 +265,9 @@ fn export_plot_as_png(
         for pixel in img_buffer.pixels_mut() {
             *pixel = bg_color;
         }
-
-        // Find data bounds
-        let mut min_x = f64::INFINITY;
-        let mut max_x = f64::NEG_INFINITY;
-        let mut min_y = f64::INFINITY;
-        let mut max_y = f64::NEG_INFINITY;
-
-        for dataset in datasets {
-            for point in &dataset.points {
-                min_x = min_x.min(point[0]);
-                max_x = max_x.max(point[0]);
-                min_y = min_y.min(point[1]);
-                max_y = max_y.max(point[1]);
-            }
-        }
-
-        if (max_x - min_x).abs() < f64::EPSILON {
-            max_x += 1.0;
-            min_x -= 1.0;
-        }
-        if (max_y - min_y).abs() < f64::EPSILON {
-            max_y += 1.0;
-            min_y -= 1.0;
-        }
-
+        
+        let (mut min_x, mut max_x, mut min_y, mut max_y) = compute_data_bounds(datasets);
+        
         let x_range = max_x - min_x;
         let y_range = max_y - min_y;
         let padding = 0.05;
@@ -286,13 +275,6 @@ fn export_plot_as_png(
         max_x += x_range * padding;
         min_y -= y_range * padding;
         max_y += y_range * padding;
-
-        if min_x >= 0.0 {
-            min_x = 0.0;
-        }
-        if min_y >= 0.0 {
-            min_y = 0.0;
-        }
 
         let margin_left = 80u32;
         let margin_right = 40u32;
@@ -450,7 +432,7 @@ fn draw_axis_labels(
         } else {
             0
         };
-        draw_text_pixels(img, label_x, tick_y + 15, &text, color);
+        draw_number_pixels(img, label_x, tick_y + 15, data_x, color);
     }
 
     // Y-axis ticks and labels
@@ -489,13 +471,6 @@ fn format_number(value: f64) -> String {
         format!("{:.0}", value)
     } else {
         format!("{:.1}", value)
-    }
-}
-
-fn draw_text_pixels(img: &mut image::RgbImage, x: u32, y: u32, text: &str, color: image::Rgb<u8>) {
-    for (i, ch) in text.chars().enumerate() {
-        let char_x = x + (i as u32 * 6);
-        draw_char_pixels(img, char_x, y, ch, color);
     }
 }
 
@@ -711,6 +686,28 @@ fn pick_file() -> Option<PathBuf> {
         .add_filter("xvg", &["xvg"])
         .pick_file()
 }
+
+fn compute_data_bounds(datasets: &[Dataset]) -> (f64, f64, f64, f64) {
+    let mut min_x = f64::INFINITY;
+    let mut max_x = f64::NEG_INFINITY;
+    let mut min_y = f64::INFINITY;
+    let mut max_y = f64::NEG_INFINITY;
+
+    for dataset in datasets {
+        for point in &dataset.points {
+            min_x = min_x.min(point[0]);
+            max_x = max_x.max(point[0]);
+            min_y = min_y.min(point[1]);
+            max_y = max_y.max(point[1]);
+        }
+    }
+
+    // optional padding
+    let padding_x = (max_x - min_x) * 0.05;
+    let padding_y = (max_y - min_y) * 0.05;
+    (min_x - padding_x, max_x + padding_x, min_y - padding_y, max_y + padding_y)
+}
+
 
 fn load_xvg_points(path: &PathBuf) -> Result<Vec<[f64; 2]>, Box<dyn std::error::Error>> {
     let file = File::open(path)?;
