@@ -50,7 +50,6 @@ impl Default for PlotterApp {
     }
 }
 
-
 impl App for PlotterApp {
     fn update(&mut self, ctx: &egui::Context, frame: &mut Frame) {
         if self.dark_mode {
@@ -98,8 +97,12 @@ impl App for PlotterApp {
 
                 if ui.button("Export Plot as PNG").clicked() {
                     match export_plot_as_png(&self.datasets, self.dark_mode, self.show_grid) {
-                        Ok(()) => self.error_message = Some("Plot exported successfully!".to_string()),
-                        Err(e) => self.error_message = Some(format!("Failed to export plot: {}", e)),
+                        Ok(()) => {
+                            self.error_message = Some("Plot exported successfully!".to_string())
+                        }
+                        Err(e) => {
+                            self.error_message = Some(format!("Failed to export plot: {}", e))
+                        }
                     }
                 }
 
@@ -211,7 +214,11 @@ impl App for PlotterApp {
 }
 
 // Export plot as PNG that ACTUALLY respects theme, grid, and has numerical axis labels
-fn export_plot_as_png(datasets: &[Dataset], dark_mode: bool, show_grid: bool) -> Result<(), Box<dyn std::error::Error>> {
+fn export_plot_as_png(
+    datasets: &[Dataset],
+    dark_mode: bool,
+    show_grid: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
     if datasets.is_empty() {
         return Err("No data to export".into());
     }
@@ -223,7 +230,7 @@ fn export_plot_as_png(datasets: &[Dataset], dark_mode: bool, show_grid: bool) ->
     {
         let width = 1200u32;
         let height = 800u32;
-        
+
         // RESPECT THEME: Choose colors based on dark_mode parameter
         let (bg_color, grid_color, axis_color, text_color) = if dark_mode {
             (
@@ -240,20 +247,20 @@ fn export_plot_as_png(datasets: &[Dataset], dark_mode: bool, show_grid: bool) ->
                 image::Rgb([0, 0, 0]),       // Black text
             )
         };
-        
+
         let mut img_buffer = image::RgbImage::new(width, height);
-        
+
         // Fill with theme-appropriate background
         for pixel in img_buffer.pixels_mut() {
             *pixel = bg_color;
         }
-        
+
         // Find data bounds
         let mut min_x = f64::INFINITY;
         let mut max_x = f64::NEG_INFINITY;
         let mut min_y = f64::INFINITY;
         let mut max_y = f64::NEG_INFINITY;
-        
+
         for dataset in datasets {
             for point in &dataset.points {
                 min_x = min_x.min(point[0]);
@@ -262,7 +269,7 @@ fn export_plot_as_png(datasets: &[Dataset], dark_mode: bool, show_grid: bool) ->
                 max_y = max_y.max(point[1]);
             }
         }
-        
+
         if (max_x - min_x).abs() < f64::EPSILON {
             max_x += 1.0;
             min_x -= 1.0;
@@ -271,7 +278,7 @@ fn export_plot_as_png(datasets: &[Dataset], dark_mode: bool, show_grid: bool) ->
             max_y += 1.0;
             min_y -= 1.0;
         }
-        
+
         let x_range = max_x - min_x;
         let y_range = max_y - min_y;
         let padding = 0.05;
@@ -279,27 +286,46 @@ fn export_plot_as_png(datasets: &[Dataset], dark_mode: bool, show_grid: bool) ->
         max_x += x_range * padding;
         min_y -= y_range * padding;
         max_y += y_range * padding;
-        
+
+        if min_x >= 0.0 {
+            min_x = 0.0;
+        }
+        if min_y >= 0.0 {
+            min_y = 0.0;
+        }
+
         let margin_left = 80u32;
         let margin_right = 40u32;
         let margin_top = 40u32;
         let margin_bottom = 60u32;
         let plot_width = width - margin_left - margin_right;
         let plot_height = height - margin_top - margin_bottom;
-        
+
         // Theme-appropriate line colors
         let line_colors = if dark_mode {
             [
-                [100, 149, 237], [255, 165, 0], [50, 205, 50], [255, 99, 71],
-                [186, 85, 211], [210, 180, 140], [255, 182, 193], [192, 192, 192],
+                [100, 149, 237],
+                [255, 165, 0],
+                [50, 205, 50],
+                [255, 99, 71],
+                [186, 85, 211],
+                [210, 180, 140],
+                [255, 182, 193],
+                [192, 192, 192],
             ]
         } else {
             [
-                [31, 120, 180], [255, 127, 14], [44, 160, 44], [214, 39, 40],
-                [148, 103, 189], [140, 86, 75], [227, 119, 194], [127, 127, 127],
+                [31, 120, 180],
+                [255, 127, 14],
+                [44, 160, 44],
+                [214, 39, 40],
+                [148, 103, 189],
+                [140, 86, 75],
+                [227, 119, 194],
+                [127, 127, 127],
             ]
         };
-        
+
         // RESPECT GRID SETTING: Only draw grid if show_grid is true
         if show_grid {
             let num_v_lines = 8;
@@ -311,7 +337,7 @@ fn export_plot_as_png(datasets: &[Dataset], dark_mode: bool, show_grid: bool) ->
                     }
                 }
             }
-            
+
             let num_h_lines = 6;
             for i in 1..num_h_lines {
                 let y = margin_top + (i * plot_height / num_h_lines);
@@ -322,73 +348,100 @@ fn export_plot_as_png(datasets: &[Dataset], dark_mode: bool, show_grid: bool) ->
                 }
             }
         }
-        
+
         // Draw axes
         let x_axis_y = height - margin_bottom;
         let y_axis_x = margin_left;
-        
+
         for x in margin_left..(width - margin_right) {
             img_buffer.put_pixel(x, x_axis_y, axis_color);
         }
-        
+
         for y in margin_top..(height - margin_bottom) {
             img_buffer.put_pixel(y_axis_x, y, axis_color);
         }
-        
+
         // ADD NUMERICAL LABELS: Draw axis tick marks and numbers
-        draw_axis_labels(&mut img_buffer, min_x, max_x, min_y, max_y, 
-                        margin_left, margin_bottom, plot_width, plot_height, 
-                        width, height, text_color);
-        
+        draw_axis_labels(
+            &mut img_buffer,
+            min_x,
+            max_x,
+            min_y,
+            max_y,
+            margin_left,
+            margin_bottom,
+            plot_width,
+            plot_height,
+            width,
+            height,
+            text_color,
+        );
+
         // Draw datasets
         for (dataset_idx, dataset) in datasets.iter().enumerate() {
             if dataset.points.is_empty() {
                 continue;
             }
-            
+
             let color_idx = dataset_idx % line_colors.len();
             let color = line_colors[color_idx];
             let rgb_color = image::Rgb(color);
-            
+
             for window in dataset.points.windows(2) {
                 let p1 = &window[0];
                 let p2 = &window[1];
-                
-                let x1 = margin_left + ((p1[0] - min_x) / (max_x - min_x) * plot_width as f64) as u32;
-                let y1 = height - margin_bottom - ((p1[1] - min_y) / (max_y - min_y) * plot_height as f64) as u32;
-                let x2 = margin_left + ((p2[0] - min_x) / (max_x - min_x) * plot_width as f64) as u32;
-                let y2 = height - margin_bottom - ((p2[1] - min_y) / (max_y - min_y) * plot_height as f64) as u32;
-                
+
+                let x1 =
+                    margin_left + ((p1[0] - min_x) / (max_x - min_x) * plot_width as f64) as u32;
+                let y1 = height
+                    - margin_bottom
+                    - ((p1[1] - min_y) / (max_y - min_y) * plot_height as f64) as u32;
+                let x2 =
+                    margin_left + ((p2[0] - min_x) / (max_x - min_x) * plot_width as f64) as u32;
+                let y2 = height
+                    - margin_bottom
+                    - ((p2[1] - min_y) / (max_y - min_y) * plot_height as f64) as u32;
+
                 draw_thick_line(&mut img_buffer, x1, y1, x2, y2, rgb_color, 2);
             }
         }
-        
+
         img_buffer.save(&path)?;
         println!("Plot exported as: {}", path.display());
     }
-    
+
     Ok(())
 }
 
-fn draw_axis_labels(img: &mut image::RgbImage, min_x: f64, max_x: f64, min_y: f64, max_y: f64,
-                   margin_left: u32, margin_bottom: u32, plot_width: u32, plot_height: u32,
-                   width: u32, height: u32, color: image::Rgb<u8>) {
-    
+fn draw_axis_labels(
+    img: &mut image::RgbImage,
+    min_x: f64,
+    max_x: f64,
+    min_y: f64,
+    max_y: f64,
+    margin_left: u32,
+    margin_bottom: u32,
+    plot_width: u32,
+    plot_height: u32,
+    width: u32,
+    height: u32,
+    color: image::Rgb<u8>,
+) {
     // X-axis ticks and labels
     let num_x_ticks = 8;
     for i in 0..=num_x_ticks {
         let x_pos = margin_left + (i * plot_width / num_x_ticks);
         let tick_y = height - margin_bottom;
-        
+
         // Draw tick mark
         for dy in 0..8 {
             if tick_y + dy < height {
                 img.put_pixel(x_pos, tick_y + dy, color);
             }
         }
-        
+
         let data_x = min_x + (max_x - min_x) * (i as f64 / num_x_ticks as f64);
-        
+
         // Center the label under the tick mark
         let text = format_number(data_x);
         let text_width = text.len() as u32 * 6; // 6 pixels per character
@@ -397,24 +450,24 @@ fn draw_axis_labels(img: &mut image::RgbImage, min_x: f64, max_x: f64, min_y: f6
         } else {
             0
         };
-        draw_number_pixels(img, label_x, tick_y + 15, data_x, color);
+        draw_text_pixels(img, label_x, tick_y + 15, &text, color);
     }
-    
+
     // Y-axis ticks and labels
     let num_y_ticks = 6;
     for i in 0..=num_y_ticks {
         let y_pos = height - margin_bottom - (i * plot_height / num_y_ticks);
         let tick_x = margin_left;
-        
+
         // Draw tick mark
         for dx in 0..8 {
             if tick_x >= dx {
                 img.put_pixel(tick_x - dx, y_pos, color);
             }
         }
-        
+
         let data_y = min_y + (max_y - min_y) * (i as f64 / num_y_ticks as f64);
-        
+
         // Right-align the Y labels to the left of the axis
         let text = format_number(data_y);
         let text_width = text.len() as u32 * 6;
@@ -439,9 +492,21 @@ fn format_number(value: f64) -> String {
     }
 }
 
-fn draw_number_pixels(img: &mut image::RgbImage, x: u32, y: u32, value: f64, color: image::Rgb<u8>) {
+fn draw_text_pixels(img: &mut image::RgbImage, x: u32, y: u32, text: &str, color: image::Rgb<u8>) {
+    for (i, ch) in text.chars().enumerate() {
+        let char_x = x + (i as u32 * 6);
+        draw_char_pixels(img, char_x, y, ch, color);
+    }
+}
+
+fn draw_number_pixels(
+    img: &mut image::RgbImage,
+    x: u32,
+    y: u32,
+    value: f64,
+    color: image::Rgb<u8>,
+) {
     let text = format_number(value);
-    
     for (i, ch) in text.chars().enumerate() {
         let char_x = x + (i as u32 * 6);
         draw_char_pixels(img, char_x, y, ch, color);
@@ -450,21 +515,47 @@ fn draw_number_pixels(img: &mut image::RgbImage, x: u32, y: u32, value: f64, col
 
 fn draw_char_pixels(img: &mut image::RgbImage, x: u32, y: u32, ch: char, color: image::Rgb<u8>) {
     let pattern = match ch {
-        '0' => [0b01110, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01110],
-        '1' => [0b00100, 0b01100, 0b00100, 0b00100, 0b00100, 0b00100, 0b01110],
-        '2' => [0b01110, 0b10001, 0b00001, 0b00110, 0b01000, 0b10000, 0b11111],
-        '3' => [0b11111, 0b00010, 0b00100, 0b00110, 0b00001, 0b10001, 0b01110],
-        '4' => [0b00010, 0b00110, 0b01010, 0b10010, 0b11111, 0b00010, 0b00010],
-        '5' => [0b11111, 0b10000, 0b11110, 0b00001, 0b00001, 0b10001, 0b01110],
-        '6' => [0b00110, 0b01000, 0b10000, 0b11110, 0b10001, 0b10001, 0b01110],
-        '7' => [0b11111, 0b00001, 0b00010, 0b00100, 0b01000, 0b01000, 0b01000],
-        '8' => [0b01110, 0b10001, 0b10001, 0b01110, 0b10001, 0b10001, 0b01110],
-        '9' => [0b01110, 0b10001, 0b10001, 0b01111, 0b00001, 0b00010, 0b01100],
-        '.' => [0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b01100, 0b01100],
-        '-' => [0b00000, 0b00000, 0b00000, 0b11111, 0b00000, 0b00000, 0b00000],
-        _ => [0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000],
+        '0' => [
+            0b01110, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01110,
+        ],
+        '1' => [
+            0b00100, 0b01100, 0b00100, 0b00100, 0b00100, 0b00100, 0b01110,
+        ],
+        '2' => [
+            0b01110, 0b10001, 0b00001, 0b00110, 0b01000, 0b10000, 0b11111,
+        ],
+        '3' => [
+            0b11111, 0b00010, 0b00100, 0b00110, 0b00001, 0b10001, 0b01110,
+        ],
+        '4' => [
+            0b00010, 0b00110, 0b01010, 0b10010, 0b11111, 0b00010, 0b00010,
+        ],
+        '5' => [
+            0b11111, 0b10000, 0b11110, 0b00001, 0b00001, 0b10001, 0b01110,
+        ],
+        '6' => [
+            0b00110, 0b01000, 0b10000, 0b11110, 0b10001, 0b10001, 0b01110,
+        ],
+        '7' => [
+            0b11111, 0b00001, 0b00010, 0b00100, 0b01000, 0b01000, 0b01000,
+        ],
+        '8' => [
+            0b01110, 0b10001, 0b10001, 0b01110, 0b10001, 0b10001, 0b01110,
+        ],
+        '9' => [
+            0b01110, 0b10001, 0b10001, 0b01111, 0b00001, 0b00010, 0b01100,
+        ],
+        '.' => [
+            0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b01100, 0b01100,
+        ],
+        '-' => [
+            0b00000, 0b00000, 0b00000, 0b11111, 0b00000, 0b00000, 0b00000,
+        ],
+        _ => [
+            0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000,
+        ],
     };
-    
+
     for (row, &pattern_row) in pattern.iter().enumerate() {
         for col in 0..5 {
             if (pattern_row >> (4 - col)) & 1 == 1 {
@@ -478,7 +569,15 @@ fn draw_char_pixels(img: &mut image::RgbImage, x: u32, y: u32, ch: char, color: 
     }
 }
 
-fn draw_thick_line(img: &mut image::RgbImage, x0: u32, y0: u32, x1: u32, y1: u32, color: image::Rgb<u8>, thickness: u32) {
+fn draw_thick_line(
+    img: &mut image::RgbImage,
+    x0: u32,
+    y0: u32,
+    x1: u32,
+    y1: u32,
+    color: image::Rgb<u8>,
+    thickness: u32,
+) {
     for offset in 0..thickness {
         let offset = offset as i32 - (thickness as i32 / 2);
         draw_line_offset(img, x0, y0, x1, y1, color, offset, 0);
@@ -488,7 +587,16 @@ fn draw_thick_line(img: &mut image::RgbImage, x0: u32, y0: u32, x1: u32, y1: u32
     }
 }
 
-fn draw_line_offset(img: &mut image::RgbImage, x0: u32, y0: u32, x1: u32, y1: u32, color: image::Rgb<u8>, offset_x: i32, offset_y: i32) {
+fn draw_line_offset(
+    img: &mut image::RgbImage,
+    x0: u32,
+    y0: u32,
+    x1: u32,
+    y1: u32,
+    color: image::Rgb<u8>,
+    offset_x: i32,
+    offset_y: i32,
+) {
     let dx = (x1 as i32 - x0 as i32).abs();
     let dy = (y1 as i32 - y0 as i32).abs();
     let sx = if x0 < x1 { 1 } else { -1 };
@@ -496,19 +604,19 @@ fn draw_line_offset(img: &mut image::RgbImage, x0: u32, y0: u32, x1: u32, y1: u3
     let mut err = dx - dy;
     let mut x = x0 as i32;
     let mut y = y0 as i32;
-    
+
     loop {
         let px = x + offset_x;
         let py = y + offset_y;
-        
+
         if px >= 0 && py >= 0 && (px as u32) < img.width() && (py as u32) < img.height() {
             img.put_pixel(px as u32, py as u32, color);
         }
-        
+
         if x == x1 as i32 && y == y1 as i32 {
             break;
         }
-        
+
         let e2 = 2 * err;
         if e2 > -dy {
             err -= dy;
@@ -529,16 +637,16 @@ fn draw_line(img: &mut image::RgbImage, x0: u32, y0: u32, x1: u32, y1: u32, colo
     let mut err = dx - dy;
     let mut x = x0 as i32;
     let mut y = y0 as i32;
-    
+
     loop {
         if x >= 0 && y >= 0 && (x as u32) < img.width() && (y as u32) < img.height() {
             img.put_pixel(x as u32, y as u32, color);
         }
-        
+
         if x == x1 as i32 && y == y1 as i32 {
             break;
         }
-        
+
         let e2 = 2 * err;
         if e2 > -dy {
             err -= dy;
