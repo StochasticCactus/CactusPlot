@@ -3,6 +3,8 @@ use eframe::{egui, App, Frame};
 use egui_plot::{Legend, Line, Plot, PlotPoints};
 use rand::prelude::*;
 use rand::thread_rng;
+use std::fs::File;
+use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 
 #[derive(Parser)]
@@ -56,22 +58,37 @@ impl App for PlotterApp {
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
-                if ui.button("Open CSV").clicked() {
-                    if let Some(path) = pick_csv_file() {
-                        match load_csv_points(&path) {
-                            Ok(points) => {
-                                let name = format!("data{}", self.next_name_index);
-                                self.next_name_index += 1;
-                                self.datasets.push(Dataset { name, points });
-                                self.error_message = None;
-                            }
-                            Err(e) => {
-                                self.error_message = Some(format!("Failed to load CSV: {}", e));
+                if ui.button("Open File").clicked() {
+                    if let Some(path) = pick_file() {
+                        match path.extension().and_then(|ext| ext.to_str()) {
+                            Some("csv") => match load_csv_points(&path) {
+                                Ok(points) => {
+                                    let name = format!("data{}", self.next_name_index);
+                                    self.next_name_index += 1;
+                                    self.datasets.push(Dataset { name, points });
+                                    self.error_message = None;
+                                }
+                                Err(e) => {
+                                    self.error_message = Some(format!("Failed to load CSV: {}", e));
+                                }
+                            },
+                            Some("xvg") => match load_xvg_points(&path) {
+                                Ok(points) => {
+                                    let name = format!("data{}", self.next_name_index);
+                                    self.next_name_index += 1;
+                                    self.datasets.push(Dataset { name, points });
+                                    self.error_message = None;
+                                }
+                                Err(e) => {
+                                    self.error_message = Some(format!("Failed to load XVG: {}", e));
+                                }
+                            },
+                            _ => {
+                                println!("Unsupported file type");
                             }
                         }
                     }
                 }
-
                 if ui.button("Clear datasets").clicked() {
                     self.datasets.clear();
                 }
@@ -207,10 +224,143 @@ fn load_csv_points(path: &PathBuf) -> Result<Vec<[f64; 2]>, Box<dyn std::error::
 }
 
 // Helper: open a file dialog (CSV) using rfd
-fn pick_csv_file() -> Option<PathBuf> {
+fn pick_file() -> Option<PathBuf> {
     rfd::FileDialog::new()
         .add_filter("csv", &["csv"])
+        .add_filter("xvg", &["xvg"])
         .pick_file()
+}
+
+// Helper: load XVG files with two columns (x,y). Skips comment lines and rows that fail to parse.
+fn load_xvg_points(path: &PathBuf) -> Result<Vec<[f64; 2]>, Box<dyn std::error::Error>> {
+    let file = File::open(path)?;
+    let reader = BufReader::new(file);
+    let mut points = Vec::new();
+
+    for line_result in reader.lines() {
+        let line = line_result?;
+        let line = line.trim();
+
+        // Skip empty lines and comment lines (starting with # or @)
+        if line.is_empty() || line.starts_with('#') || line.starts_with('@') {
+            continue;
+        }
+
+        // Split the line by whitespace
+        let parts: Vec<&str> = line.split_whitespace().collect();
+
+        // We need at least 2 columns for x,y data
+        if parts.len() < 2 {
+            continue;
+        }
+
+        // Try to parse the first two columns as f64
+        if let (Ok(x), Ok(y)) = (parts[0].parse::<f64>(), parts[1].parse::<f64>()) {
+            points.push([x, y]);
+        }
+        // Skip rows that can't be parsed as numbers
+    }
+
+    Ok(points)
+}
+
+// Enhanced version that can handle multiple columns and return metadata
+#[derive(Debug)]
+pub struct XvgData {
+    pub points: Vec<[f64; 2]>,
+    pub title: Option<String>,
+    pub xlabel: Option<String>,
+    pub ylabel: Option<String>,
+    pub legend: Option<String>,
+}
+
+fn load_xvg_with_metadata(path: &PathBuf) -> Result<XvgData, Box<dyn std::error::Error>> {
+    let file = File::open(path)?;
+    let reader = BufReader::new(file);
+    let mut points = Vec::new();
+    let mut title = None;
+    let mut xlabel = None;
+    let mut ylabel = None;
+    let mut legend = None;
+
+    for line_result in reader.lines() {
+        let line = line_result?;
+        let line = line.trim();
+
+        // Skip empty lines
+        if line.is_empty() {
+            continue;
+        }
+
+        // Parse xmgrace directives (lines starting with @)
+        if line.starts_with('@') {
+            if line.contains("title") {
+                // Extract title from @title "Title Text"
+                if let Some(start) = line.find('"') {
+                    if let Some(end) = line.rfind('"') {
+                        if end > start {
+                            title = Some(line[start + 1..end].to_string());
+                        }
+                    }
+                }
+            } else if line.contains("xaxis label") {
+                // Extract x-axis label
+                if let Some(start) = line.find('"') {
+                    if let Some(end) = line.rfind('"') {
+                        if end > start {
+                            xlabel = Some(line[start + 1..end].to_string());
+                        }
+                    }
+                }
+            } else if line.contains("yaxis label") {
+                // Extract y-axis label
+                if let Some(start) = line.find('"') {
+                    if let Some(end) = line.rfind('"') {
+                        if end > start {
+                            ylabel = Some(line[start + 1..end].to_string());
+                        }
+                    }
+                }
+            } else if line.contains("s0 legend") {
+                // Extract legend for first series
+                if let Some(start) = line.find('"') {
+                    if let Some(end) = line.rfind('"') {
+                        if end > start {
+                            legend = Some(line[start + 1..end].to_string());
+                        }
+                    }
+                }
+            }
+            continue;
+        }
+
+        // Skip other comment lines (starting with #)
+        if line.starts_with('#') {
+            continue;
+        }
+
+        // Split the line by whitespace
+        let parts: Vec<&str> = line.split_whitespace().collect();
+
+        // We need at least 2 columns for x,y data
+        if parts.len() < 2 {
+            continue;
+        }
+
+        // Try to parse the first two columns as f64
+        if let (Ok(x), Ok(y)) = (parts[0].parse::<f64>(), parts[1].parse::<f64>()) {
+            points.push([x, y]);
+        }
+        // Skip rows that can't be parsed as numbers
+    }
+
+    Ok(XvgData {
+        points,
+        title,
+        xlabel,
+        ylabel,
+        legend,
+    })
 }
 
 fn main() {
