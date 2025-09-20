@@ -23,7 +23,6 @@ struct Args {
 struct Dataset {
     name: String,
     points: Vec<[f64; 2]>,
-    color: [u8; 3], // RGB color for this dataset
 }
 
 struct PlotterApp {
@@ -52,14 +51,12 @@ struct PlotterApp {
     show_data_manipulation: bool,
     rolling_window_size: usize,
     selected_dataset_for_processing: usize,
-    // Color management
-    show_color_picker: bool,
-    selected_dataset_for_color: usize,
 }
 
 impl Default for PlotterApp {
     fn default() -> Self {
-        Self {
+        
+         Self {
             datasets: Vec::new(),
             show_grid: false,
             show_legend: true,
@@ -82,8 +79,6 @@ impl Default for PlotterApp {
             show_data_manipulation: false,
             rolling_window_size: 10,
             selected_dataset_for_processing: 0,
-            show_color_picker: false,
-            selected_dataset_for_color: 0, 
         }
     }
 }
@@ -106,8 +101,7 @@ impl App for PlotterApp {
                                 Ok(points) => {
                                     let name = format!("data{}", self.next_name_index);
                                     self.next_name_index += 1;
-                                    let color = get_default_color((self.datasets.len()) % 8);
-                                    self.datasets.push(Dataset { name, points, color });
+                                    self.datasets.push(Dataset { name, points });
                                     self.error_message = None;
                                 }
                                 Err(e) => {
@@ -118,8 +112,7 @@ impl App for PlotterApp {
                                 Ok(points) => {
                                     let name = format!("data{}", self.next_name_index);
                                     self.next_name_index += 1;
-                                    let color = get_default_color((self.datasets.len()) % 8);
-                                    self.datasets.push(Dataset { name, points, color });
+                                    self.datasets.push(Dataset { name, points });
                                     self.error_message = None;
                                 }
                                 Err(e) => {
@@ -184,11 +177,6 @@ impl App for PlotterApp {
                     self.show_data_manipulation = !self.show_data_manipulation;
                 }
 
-                // Toggle for color picker window
-                if ui.button("🎨 Colors").clicked() {
-                    self.show_color_picker = !self.show_color_picker;
-                }
-
                 ui.horizontal(|ui| {
                     ui.label("Dark Mode:");
                     let switch_size = egui::vec2(40.0, 20.0);
@@ -230,8 +218,7 @@ impl App for PlotterApp {
                     }
                     let name = format!("random{}", self.next_name_index);
                     self.next_name_index += 1;
-                    let color = get_default_color(self.datasets.len() % 8);
-                    self.datasets.push(Dataset { name, points: pts, color });
+                    self.datasets.push(Dataset { name, points: pts });
                 }
             });
 
@@ -313,152 +300,116 @@ impl App for PlotterApp {
                         });
                     }
                 });
+
         }
 
-        // Separate data manipulation window
-        if self.show_data_manipulation {
-            egui::Window::new("Data Processing")
-                .resizable(true)
-                .default_width(350.0)
-                .default_height(250.0)
-                .show(ctx, |ui| {
-                    if self.datasets.is_empty() {
-                        ui.label("No datasets loaded. Load data first to enable processing.");
-                        return;
-                    }
 
-                    ui.heading("Rolling Average");
-                    ui.separator();
+            // Separate data manipulation window
+if self.show_data_manipulation {
+    egui::Window::new("Data Processing")
+        .resizable(true)
+        .default_width(350.0)
+        .default_height(250.0)
+        .show(ctx, |ui| {
+            if self.datasets.is_empty() {
+                ui.label("No datasets loaded. Load data first to enable processing.");
+                return;
+            }
 
-                    // Dataset selection
-                    ui.horizontal(|ui| {
-                        ui.label("Dataset:");
-                        egui::ComboBox::from_label("")
-                            .selected_text(&self.datasets[self.selected_dataset_for_processing].name)
-                            .show_ui(ui, |ui| {
-                                for (i, dataset) in self.datasets.iter().enumerate() {
-                                    ui.selectable_value(&mut self.selected_dataset_for_processing, i, &dataset.name);
-                                }
-                            });
-                    });
+            ui.heading("Rolling Average");
+            ui.separator();
 
-                    ui.add_space(10.0);
-
-                    // Window size setting
-                    ui.horizontal(|ui| {
-                        ui.label("Window size:");
-                        ui.add(egui::Slider::new(&mut self.rolling_window_size, 2..=100).text("points"));
-                    });
-
-                    ui.add_space(10.0);
-
-                    // Show preview info
-                    if self.selected_dataset_for_processing < self.datasets.len() {
-                        let dataset = &self.datasets[self.selected_dataset_for_processing];
-                        ui.label(format!("Original dataset: {} points", dataset.points.len()));
-                        
-                        if dataset.points.len() >= self.rolling_window_size {
-                            let result_points = dataset.points.len() - self.rolling_window_size + 1;
-                            ui.label(format!("Rolling average will have: {} points", result_points));
-                        } else {
-                            ui.colored_label(egui::Color32::from_rgb(255, 165, 0), 
-                                "Warning: Window size larger than dataset!");
+            // Dataset selection
+            ui.horizontal(|ui| {
+                ui.label("Dataset:");
+                egui::ComboBox::from_label("")
+                    .selected_text(&self.datasets[self.selected_dataset_for_processing].name)
+                    .show_ui(ui, |ui| {
+                        for (i, dataset) in self.datasets.iter().enumerate() {
+                            ui.selectable_value(
+                                &mut self.selected_dataset_for_processing,
+                                i,
+                                &dataset.name,
+                            );
                         }
-                    }
+                    });
+            });
 
-                    ui.add_space(15.0);
+            ui.add_space(10.0);
 
-                    // Compute button
-                    if ui.button("🔄 Compute Rolling Average").clicked() {
-                        if self.selected_dataset_for_processing < self.datasets.len() {
-                            let source_dataset = &self.datasets[self.selected_dataset_for_processing];
-                            
-                            if source_dataset.points.len() >= self.rolling_window_size {
-                                match compute_rolling_average(&source_dataset.points, self.rolling_window_size) {
-                                    Ok(rolling_avg_points) => {
-                                        let new_name = format!("{}_rolling_avg_{}", 
-                                            source_dataset.name, self.rolling_window_size);
-                                        let new_dataset = Dataset {
-                                            name: new_name,
-                                            points: rolling_avg_points,
-                                            color: get_default_color(self.datasets.len() % 8),
-                                        };
-                                        self.datasets.push(new_dataset);
-                                        self.error_message = Some(format!(
-                                            "Rolling average computed! Added as new dataset."
-                                        ));
-                                    },
-                                    Err(e) => {
-                                        self.error_message = Some(format!("Error computing rolling average: {}", e));
-                                    }
-                                }
-                            } else {
+            // Window size setting
+            ui.horizontal(|ui| {
+                ui.label("Window size:");
+                ui.add(egui::Slider::new(
+                    &mut self.rolling_window_size,
+                    2..=1000,
+                ).text("points"));
+            });
+
+            ui.add_space(10.0);
+
+            // Show preview info
+            if self.selected_dataset_for_processing < self.datasets.len() {
+                let dataset = &self.datasets[self.selected_dataset_for_processing];
+                ui.label(format!("Original dataset: {} points", dataset.points.len()));
+
+                if dataset.points.len() >= self.rolling_window_size {
+                    let result_points = dataset.points.len() - self.rolling_window_size + 1;
+                    ui.label(format!("Rolling average will have: {} points", result_points));
+                } else {
+                    ui.colored_label(
+                        egui::Color32::from_rgb(255, 165, 0),
+                        "Warning: Window size larger than dataset!",
+                    );
+                }
+            }
+
+            ui.add_space(15.0);
+
+            // Compute button
+            if ui.button("🔄 Compute Rolling Average").clicked() {
+                if self.selected_dataset_for_processing < self.datasets.len() {
+                    let source_dataset = &self.datasets[self.selected_dataset_for_processing];
+
+                    if source_dataset.points.len() >= self.rolling_window_size {
+                        match compute_rolling_average(
+                            &source_dataset.points,
+                            self.rolling_window_size,
+                        ) {
+                            Ok(rolling_avg_points) => {
+                                let new_name = format!(
+                                    "{}_rolling_avg_{}",
+                                    source_dataset.name,
+                                    self.rolling_window_size
+                                );
+                                let new_dataset = Dataset {
+                                    name: new_name,
+                                    points: rolling_avg_points,
+                                };
+                                self.datasets.push(new_dataset);
                                 self.error_message = Some(
-                                    "Window size must be smaller than or equal to dataset size.".to_string()
+                                    "Rolling average computed! Added as new dataset.".to_string(),
                                 );
                             }
-                        }
-                    }
-
-                    ui.add_space(10.0);
-                    ui.separator();
-                    ui.small("The rolling average will be added as a new dataset that you can export or analyze separately.");
-                });
-        }
- 
-
-        // Separate color picker window
-        if self.show_color_picker {
-            egui::Window::new("Dataset Colors")
-                .resizable(true)
-                .default_width(300.0)
-                .default_height(400.0)
-                .show(ctx, |ui| {
-                    if self.datasets.is_empty() {
-                        ui.label("No datasets loaded. Load data first to customize colors.");
-                        return;
-                    }
-
-                    ui.heading("Dataset Colors");
-                    ui.separator();
-
-                    for (i, dataset) in self.datasets.iter_mut().enumerate() {
-                        ui.horizontal(|ui| {
-                            // Color square button
-                            let color_button_size = egui::vec2(30.0, 20.0);
-                            let color = egui::Color32::from_rgb(dataset.color[0], dataset.color[1], dataset.color[2]);
-                            
-                            if ui
-                                .add(egui::Button::new("").fill(color).min_size(color_button_size))
-                                .clicked()
-                            {
-                                self.selected_dataset_for_color = i;
+                            Err(e) => {
+                                self.error_message =
+                                    Some(format!("Error computing rolling average: {}", e));
                             }
-
-                            ui.label(&dataset.name);
-                        });
-
-                        // Color picker for selected dataset
-                        if i == self.selected_dataset_for_color {
-                            ui.indent("color_picker", |ui| {
-                                let mut color = egui::Color32::from_rgb(dataset.color[0], dataset.color[1], dataset.color[2]);
-                                ui.color_edit_button_srgba(&mut color);
-                                dataset.color = [color.r(), color.g(), color.b()];
-                            });
                         }
-
-                        ui.add_space(5.0);
+                    } else {
+                        self.error_message = Some(
+                            "Window size must be smaller than or equal to dataset size."
+                                .to_string(),
+                        );
                     }
+                }
+            }
 
-                    ui.separator();
-                    
-                    if ui.button("Reset to Default Colors").clicked() {
-                        for (i, dataset) in self.datasets.iter_mut().enumerate() {
-                            dataset.color = get_default_color(i % 8);
-                        }
-                    }
-                });
-        }
+            ui.add_space(10.0);
+            ui.separator();
+            ui.small("The rolling average will be added as a new dataset that you can export or analyze separately.");
+        });
+}
 
         // Main plot area with applied axis settings
         egui::CentralPanel::default().show(ctx, |ui| {
@@ -471,21 +422,8 @@ impl App for PlotterApp {
                     ui.label("Datasets:");
 
                     let mut remove_index: Option<usize> = None;
-                    for (i, ds) in self.datasets.iter_mut().enumerate() {
+                    for (i, ds) in self.datasets.iter().enumerate() {
                         ui.horizontal(|ui| {
-                            // Clickable color square
-                            let color_size = egui::vec2(15.0, 15.0);
-                            let color = egui::Color32::from_rgb(ds.color[0], ds.color[1], ds.color[2]);
-                            
-                            if ui
-                                .add(egui::Button::new("").fill(color).min_size(color_size))
-                                .on_hover_text("Click to change color")
-                                .clicked()
-                            {
-                                self.selected_dataset_for_color = i;
-                                self.show_color_picker = true;
-                            }
-
                             ui.label(format!("{}:", i + 1));
                             ui.label(&ds.name);
                             if ui.small_button("x").clicked() {
@@ -535,10 +473,7 @@ impl App for PlotterApp {
 
                     plot.show(ui, |plot_ui| {
                         for ds in &self.datasets {
-                            let color = egui::Color32::from_rgb(ds.color[0], ds.color[1], ds.color[2]);
-                            let line = Line::new(PlotPoints::new(ds.points.clone()))
-                                .name(&ds.name)
-                                .color(color);
+                            let line = Line::new(PlotPoints::new(ds.points.clone())).name(&ds.name);
                             plot_ui.line(line);
                         }
                     });
@@ -724,15 +659,26 @@ fn export_plot_as_png_with_config(
             axis_config.as_ref(),
         );
 
-        // Draw datasets using their custom colors
+        // Draw datasets
+        let line_colors = if dark_mode {
+            [
+                [100, 149, 237], [255, 165, 0], [50, 205, 50], [255, 99, 71],
+                [186, 85, 211], [210, 180, 140], [255, 182, 193], [192, 192, 192],
+            ]
+        } else {
+            [
+                [31, 120, 180], [255, 127, 14], [44, 160, 44], [214, 39, 40],
+                [148, 103, 189], [140, 86, 75], [227, 119, 194], [127, 127, 127],
+            ]
+        };
+
         for (dataset_idx, dataset) in datasets.iter().enumerate() {
             if dataset.points.is_empty() {
                 continue;
             }
-            
-            // Use the dataset's custom color instead of the predefined palette
-            let rgb_color = image::Rgb(dataset.color);
-            
+            let color_idx = dataset_idx % line_colors.len();
+            let color = line_colors[color_idx];
+            let rgb_color = image::Rgb(color);
             for window in dataset.points.windows(2) {
                 let p1 = &window[0];
                 let p2 = &window[1];
@@ -1091,21 +1037,6 @@ fn format_number(value: f64) -> String {
     }
 }
 
-// Get default color palette
-fn get_default_color(index: usize) -> [u8; 3] {
-    let colors = [
-        [31, 120, 180],   // Blue
-        [255, 127, 14],   // Orange  
-        [44, 160, 44],    // Green
-        [214, 39, 40],    // Red
-        [148, 103, 189],  // Purple
-        [140, 86, 75],    // Brown
-        [227, 119, 194],  // Pink
-        [127, 127, 127],  // Gray
-    ];
-    colors[index % colors.len()]
-}
-
 fn pick_file() -> Option<PathBuf> {
     rfd::FileDialog::new()
         .add_filter("csv", &["csv"])
@@ -1127,11 +1058,9 @@ fn main() {
 
             for file in args.files {
                 if let Ok(points) = load_csv_points(&PathBuf::from(&file)) {
-                    let color = get_default_color(app.datasets.len() % 8);
                     app.datasets.push(Dataset {
                         name: file.clone(),
                         points,
-                        color,
                     });
                     app.next_name_index += 1;
                 }
