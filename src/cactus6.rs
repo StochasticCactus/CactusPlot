@@ -47,16 +47,11 @@ struct PlotterApp {
     custom_y_ticks: String,  // Comma-separated values
     use_custom_x_ticks: bool,
     use_custom_y_ticks: bool,
-    // Data manipulation fields
-    show_data_manipulation: bool,
-    rolling_window_size: usize,
-    selected_dataset_for_processing: usize,
 }
 
 impl Default for PlotterApp {
     fn default() -> Self {
-        
-         Self {
+        Self {
             datasets: Vec::new(),
             show_grid: false,
             show_legend: true,
@@ -76,9 +71,6 @@ impl Default for PlotterApp {
             custom_y_ticks: String::new(),
             use_custom_x_ticks: false,
             use_custom_y_ticks: false,
-            show_data_manipulation: false,
-            rolling_window_size: 10,
-            selected_dataset_for_processing: 0,
         }
     }
 }
@@ -170,11 +162,6 @@ impl App for PlotterApp {
                 // Toggle for axis controls window
                 if ui.button("⚙ Axis Controls").clicked() {
                     self.show_axis_controls = !self.show_axis_controls;
-                }
-
-                // Toggle for data manipulation window
-                if ui.button("📊 Data Processing").clicked() {
-                    self.show_data_manipulation = !self.show_data_manipulation;
                 }
 
                 ui.horizontal(|ui| {
@@ -300,116 +287,7 @@ impl App for PlotterApp {
                         });
                     }
                 });
-
         }
-
-
-            // Separate data manipulation window
-if self.show_data_manipulation {
-    egui::Window::new("Data Processing")
-        .resizable(true)
-        .default_width(350.0)
-        .default_height(250.0)
-        .show(ctx, |ui| {
-            if self.datasets.is_empty() {
-                ui.label("No datasets loaded. Load data first to enable processing.");
-                return;
-            }
-
-            ui.heading("Rolling Average");
-            ui.separator();
-
-            // Dataset selection
-            ui.horizontal(|ui| {
-                ui.label("Dataset:");
-                egui::ComboBox::from_label("")
-                    .selected_text(&self.datasets[self.selected_dataset_for_processing].name)
-                    .show_ui(ui, |ui| {
-                        for (i, dataset) in self.datasets.iter().enumerate() {
-                            ui.selectable_value(
-                                &mut self.selected_dataset_for_processing,
-                                i,
-                                &dataset.name,
-                            );
-                        }
-                    });
-            });
-
-            ui.add_space(10.0);
-
-            // Window size setting
-            ui.horizontal(|ui| {
-                ui.label("Window size:");
-                ui.add(egui::Slider::new(
-                    &mut self.rolling_window_size,
-                    2..=100,
-                ).text("points"));
-            });
-
-            ui.add_space(10.0);
-
-            // Show preview info
-            if self.selected_dataset_for_processing < self.datasets.len() {
-                let dataset = &self.datasets[self.selected_dataset_for_processing];
-                ui.label(format!("Original dataset: {} points", dataset.points.len()));
-
-                if dataset.points.len() >= self.rolling_window_size {
-                    let result_points = dataset.points.len() - self.rolling_window_size + 1;
-                    ui.label(format!("Rolling average will have: {} points", result_points));
-                } else {
-                    ui.colored_label(
-                        egui::Color32::from_rgb(255, 165, 0),
-                        "Warning: Window size larger than dataset!",
-                    );
-                }
-            }
-
-            ui.add_space(15.0);
-
-            // Compute button
-            if ui.button("🔄 Compute Rolling Average").clicked() {
-                if self.selected_dataset_for_processing < self.datasets.len() {
-                    let source_dataset = &self.datasets[self.selected_dataset_for_processing];
-
-                    if source_dataset.points.len() >= self.rolling_window_size {
-                        match compute_rolling_average(
-                            &source_dataset.points,
-                            self.rolling_window_size,
-                        ) {
-                            Ok(rolling_avg_points) => {
-                                let new_name = format!(
-                                    "{}_rolling_avg_{}",
-                                    source_dataset.name,
-                                    self.rolling_window_size
-                                );
-                                let new_dataset = Dataset {
-                                    name: new_name,
-                                    points: rolling_avg_points,
-                                };
-                                self.datasets.push(new_dataset);
-                                self.error_message = Some(
-                                    "Rolling average computed! Added as new dataset.".to_string(),
-                                );
-                            }
-                            Err(e) => {
-                                self.error_message =
-                                    Some(format!("Error computing rolling average: {}", e));
-                            }
-                        }
-                    } else {
-                        self.error_message = Some(
-                            "Window size must be smaller than or equal to dataset size."
-                                .to_string(),
-                        );
-                    }
-                }
-            }
-
-            ui.add_space(10.0);
-            ui.separator();
-            ui.small("The rolling average will be added as a new dataset that you can export or analyze separately.");
-        });
-}
 
         // Main plot area with applied axis settings
         egui::CentralPanel::default().show(ctx, |ui| {
@@ -501,32 +379,6 @@ fn parse_custom_ticks(ticks_str: &str) -> Vec<f64> {
         .split(',')
         .filter_map(|s| s.trim().parse::<f64>().ok())
         .collect()
-}
-
-// Helper function to compute rolling average
-fn compute_rolling_average(points: &[[f64; 2]], window_size: usize) -> Result<Vec<[f64; 2]>, Box<dyn std::error::Error>> {
-    if window_size == 0 {
-        return Err("Window size must be greater than 0".into());
-    }
-    
-    if points.len() < window_size {
-        return Err("Window size cannot be larger than dataset size".into());
-    }
-    
-    let mut result = Vec::new();
-    
-    // Compute rolling average
-    for i in 0..=(points.len() - window_size) {
-        let window_slice = &points[i..i + window_size];
-        
-        // Calculate average X and Y for this window
-        let avg_x: f64 = window_slice.iter().map(|p| p[0]).sum::<f64>() / window_size as f64;
-        let avg_y: f64 = window_slice.iter().map(|p| p[1]).sum::<f64>() / window_size as f64;
-        
-        result.push([avg_x, avg_y]);
-    }
-    
-    Ok(result)
 }
 
 // Helper function to get data bounds
