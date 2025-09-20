@@ -25,6 +25,7 @@ struct Dataset {
     points: Vec<[f64; 2]>,
 }
 
+
 struct PlotterApp {
     datasets: Vec<Dataset>,
     show_grid: bool,
@@ -33,7 +34,7 @@ struct PlotterApp {
     error_message: Option<String>,
     dark_mode: bool,
     screenshot_requested: bool,
-    // Axis control fields
+    // New fields for axis control
     use_custom_bounds: bool,
     custom_x_min: String,
     custom_x_max: String,
@@ -42,11 +43,6 @@ struct PlotterApp {
     x_padding_percent: f64,
     y_padding_percent: f64,
     show_axis_controls: bool,
-    // Custom ticks
-    custom_x_ticks: String,  // Comma-separated values
-    custom_y_ticks: String,  // Comma-separated values
-    use_custom_x_ticks: bool,
-    use_custom_y_ticks: bool,
 }
 
 impl Default for PlotterApp {
@@ -59,22 +55,20 @@ impl Default for PlotterApp {
             error_message: None,
             dark_mode: true,
             screenshot_requested: false,
+            // Default values for axis controls
             use_custom_bounds: false,
             custom_x_min: String::new(),
             custom_x_max: String::new(),
             custom_y_min: String::new(),
             custom_y_max: String::new(),
-            x_padding_percent: 5.0,
+            x_padding_percent: 5.0, // 5% padding
             y_padding_percent: 5.0,
             show_axis_controls: false,
-            custom_x_ticks: String::new(),
-            custom_y_ticks: String::new(),
-            use_custom_x_ticks: false,
-            use_custom_y_ticks: false,
         }
     }
 }
 
+// Modified update function with axis controls UI
 impl App for PlotterApp {
     fn update(&mut self, ctx: &egui::Context, frame: &mut Frame) {
         if self.dark_mode {
@@ -83,7 +77,6 @@ impl App for PlotterApp {
             ctx.set_visuals(egui::Visuals::light());
         }
 
-        // Main application window
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 if ui.button("Open File").clicked() {
@@ -130,8 +123,6 @@ impl App for PlotterApp {
                             y_max: self.custom_y_max.parse().ok(),
                             x_padding_percent: self.x_padding_percent / 100.0,
                             y_padding_percent: self.y_padding_percent / 100.0,
-                            custom_x_ticks: if self.use_custom_x_ticks { Some(parse_custom_ticks(&self.custom_x_ticks)) } else { None },
-                            custom_y_ticks: if self.use_custom_y_ticks { Some(parse_custom_ticks(&self.custom_y_ticks)) } else { None },
                         })
                     } else {
                         None
@@ -159,7 +150,7 @@ impl App for PlotterApp {
                 ui.checkbox(&mut self.show_grid, "Grid");
                 ui.checkbox(&mut self.show_legend, "Legend");
 
-                // Toggle for axis controls window
+                // Toggle for axis controls
                 if ui.button("⚙ Axis Controls").clicked() {
                     self.show_axis_controls = !self.show_axis_controls;
                 }
@@ -212,16 +203,12 @@ impl App for PlotterApp {
             if let Some(ref error) = self.error_message {
                 ui.colored_label(egui::Color32::RED, error);
             }
-        });
 
-        // Separate axis controls window
-        if self.show_axis_controls {
-            egui::Window::new("Axis Controls")
-                .resizable(true)
-                .default_width(400.0)
-                .default_height(300.0)
-                .show(ctx, |ui| {
-                    ui.checkbox(&mut self.use_custom_bounds, "Override Automatic Axis Ranges");
+            // Axis controls panel
+            if self.show_axis_controls {
+                ui.separator();
+                ui.horizontal(|ui| {
+                    ui.checkbox(&mut self.use_custom_bounds, "Use Custom Axis Ranges");
 
                     if self.use_custom_bounds {
                         ui.separator();
@@ -235,61 +222,42 @@ impl App for PlotterApp {
                                 self.custom_y_max = format!("{:.3}", max_y);
                             }
                         }
-
-                        ui.separator();
-
-                        // X-axis controls
-                        ui.group(|ui| {
-                            ui.label("X-Axis Range");
-                            ui.horizontal(|ui| {
-                                ui.label("Min:");
-                                ui.text_edit_singleline(&mut self.custom_x_min);
-                                ui.label("Max:");
-                                ui.text_edit_singleline(&mut self.custom_x_max);
-                            });
-                            ui.horizontal(|ui| {
-                                ui.label("Padding:");
-                                ui.add(egui::Slider::new(&mut self.x_padding_percent, 0.0..=20.0)
-                                       .suffix("%"));
-                            });
-                            
-                            ui.checkbox(&mut self.use_custom_x_ticks, "Custom X-axis ticks");
-                            if self.use_custom_x_ticks {
-                                ui.label("X-axis tick values (comma-separated):");
-                                ui.text_edit_multiline(&mut self.custom_x_ticks);
-                                ui.small("Example: 0, 250, 500");
-                            }
-                        });
-
-                        ui.separator();
-
-                        // Y-axis controls
-                        ui.group(|ui| {
-                            ui.label("Y-Axis Range");
-                            ui.horizontal(|ui| {
-                                ui.label("Min:");
-                                ui.text_edit_singleline(&mut self.custom_y_min);
-                                ui.label("Max:");
-                                ui.text_edit_singleline(&mut self.custom_y_max);
-                            });
-                            ui.horizontal(|ui| {
-                                ui.label("Padding:");
-                                ui.add(egui::Slider::new(&mut self.y_padding_percent, 0.0..=20.0)
-                                       .suffix("%"));
-                            });
-                            
-                            ui.checkbox(&mut self.use_custom_y_ticks, "Custom Y-axis ticks");
-                            if self.use_custom_y_ticks {
-                                ui.label("Y-axis tick values (comma-separated):");
-                                ui.text_edit_multiline(&mut self.custom_y_ticks);
-                                ui.small("Example: 0.0, 0.5, 1.0");
-                            }
-                        });
                     }
                 });
-        }
 
-        // Main plot area with applied axis settings
+                if self.use_custom_bounds {
+                    ui.horizontal(|ui| {
+                        ui.label("X-axis:");
+                        ui.label("Min:");
+                        ui.text_edit_singleline(&mut self.custom_x_min);
+                        ui.label("Max:");
+                        ui.text_edit_singleline(&mut self.custom_x_max);
+
+                        ui.separator();
+                        ui.label("Padding:");
+                        ui.add(egui::Slider::new(&mut self.x_padding_percent, 0.0..=20.0)
+                               .suffix("%")
+                               .text("X"));
+                    });
+
+                    ui.horizontal(|ui| {
+                        ui.label("Y-axis:");
+                        ui.label("Min:");
+                        ui.text_edit_singleline(&mut self.custom_y_min);
+                        ui.label("Max:");
+                        ui.text_edit_singleline(&mut self.custom_y_max);
+
+                        ui.separator();
+                        ui.label("Padding:");
+                        ui.add(egui::Slider::new(&mut self.y_padding_percent, 0.0..=20.0)
+                               .suffix("%")
+                               .text("Y"));
+                    });
+                }
+            }
+        });
+
+        // Rest of the update function remains the same
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("Plot area — pan with mouse, zoom with scroll");
             ui.add_space(6.0);
@@ -323,28 +291,6 @@ impl App for PlotterApp {
                         .width(1000.0)
                         .show_axes([true, true])
                         .show_grid([self.show_grid, self.show_grid]);
-
-                    // Apply custom bounds to GUI plot in real-time
-                    if self.use_custom_bounds {
-                        if let (Ok(min_x), Ok(max_x)) = (self.custom_x_min.parse::<f64>(), self.custom_x_max.parse::<f64>()) {
-                            if let (Ok(min_y), Ok(max_y)) = (self.custom_y_min.parse::<f64>(), self.custom_y_max.parse::<f64>()) {
-                                // Apply padding to GUI plot as well
-                                let x_range = max_x - min_x;
-                                let y_range = max_y - min_y;
-                                let x_padding = x_range * (self.x_padding_percent / 100.0);
-                                let y_padding = y_range * (self.y_padding_percent / 100.0);
-                                
-                                let padded_min_x = min_x - x_padding;
-                                let padded_max_x = max_x + x_padding;
-                                let padded_min_y = min_y - y_padding;
-                                let padded_max_y = max_y + y_padding;
-                                
-                                plot = plot.include_x(padded_min_x).include_x(padded_max_x)
-                                          .include_y(padded_min_y).include_y(padded_max_y);
-                            }
-                        }
-                    }
-
                     if self.show_legend {
                         plot = plot.legend(Legend::default());
                     }
@@ -369,16 +315,6 @@ struct AxisConfig {
     y_max: Option<f64>,
     x_padding_percent: f64,
     y_padding_percent: f64,
-    custom_x_ticks: Option<Vec<f64>>,
-    custom_y_ticks: Option<Vec<f64>>,
-}
-
-// Helper function to parse custom ticks from comma-separated string
-fn parse_custom_ticks(ticks_str: &str) -> Vec<f64> {
-    ticks_str
-        .split(',')
-        .filter_map(|s| s.trim().parse::<f64>().ok())
-        .collect()
 }
 
 // Helper function to get data bounds
@@ -404,6 +340,33 @@ fn get_data_bounds(datasets: &[Dataset]) -> Option<(f64, f64, f64, f64)> {
     Some((min_x, max_x, min_y, max_y))
 }
 
+fn load_xvg_points(path: &PathBuf) -> Result<Vec<[f64; 2]>, Box<dyn std::error::Error>> {
+    let file = File::open(path)?;
+    let reader = BufReader::new(file);
+    let mut points = Vec::new();
+
+    for line_result in reader.lines() {
+        let line = line_result?;
+        let line = line.trim();
+
+        if line.is_empty() || line.starts_with('#') || line.starts_with('@') {
+            continue;
+        }
+
+        let parts: Vec<&str> = line.split_whitespace().collect();
+
+        if parts.len() < 2 {
+            continue;
+        }
+
+        if let (Ok(x), Ok(y)) = (parts[0].parse::<f64>(), parts[1].parse::<f64>()) {
+            points.push([x, y]);
+        }
+    }
+
+    Ok(points)
+}
+
 // Modified export function that accepts axis configuration
 fn export_plot_as_png_with_config(
     datasets: &[Dataset],
@@ -424,8 +387,8 @@ fn export_plot_as_png_with_config(
         let height = 800u32;
 
         // Calculate bounds based on configuration
-        let (min_x, max_x, min_y, max_y) = if let Some(ref config) = axis_config {
-            calculate_custom_bounds(datasets, config)?
+        let (min_x, max_x, min_y, max_y) = if let Some(config) = axis_config {
+            calculate_custom_bounds(datasets, &config)?
         } else {
             calculate_auto_bounds(datasets)
         };
@@ -494,8 +457,8 @@ fn export_plot_as_png_with_config(
             img_buffer.put_pixel(y_axis_x, y, axis_color);
         }
 
-        // Draw axis labels with custom ticks if specified
-        draw_axis_labels_with_custom_ticks(
+        // Draw axis labels
+        draw_axis_labels(
             &mut img_buffer,
             min_x,
             max_x,
@@ -508,7 +471,6 @@ fn export_plot_as_png_with_config(
             width,
             height,
             text_color,
-            axis_config.as_ref(),
         );
 
         // Draw datasets
@@ -555,14 +517,17 @@ fn export_plot_as_png_with_config(
 }
 
 fn calculate_custom_bounds(datasets: &[Dataset], config: &AxisConfig) -> Result<(f64, f64, f64, f64), Box<dyn std::error::Error>> {
+    // Get data bounds as fallback
     let (data_min_x, data_max_x, data_min_y, data_max_y) = get_data_bounds(datasets)
         .ok_or("No data available")?;
 
+    // Use custom values if provided, otherwise use data bounds
     let base_min_x = config.x_min.unwrap_or(data_min_x);
     let base_max_x = config.x_max.unwrap_or(data_max_x);
     let base_min_y = config.y_min.unwrap_or(data_min_y);
     let base_max_y = config.y_max.unwrap_or(data_max_y);
 
+    // Apply padding
     let x_range = base_max_x - base_min_x;
     let y_range = base_max_y - base_min_y;
 
@@ -581,6 +546,7 @@ fn calculate_auto_bounds(datasets: &[Dataset]) -> (f64, f64, f64, f64) {
     let (mut min_x, mut max_x, mut min_y, mut max_y) = get_data_bounds(datasets)
         .unwrap_or((0.0, 1.0, 0.0, 1.0));
 
+    // Handle edge cases
     if (max_x - min_x).abs() < f64::EPSILON {
         let center = min_x;
         min_x = center - 1.0;
@@ -593,6 +559,7 @@ fn calculate_auto_bounds(datasets: &[Dataset]) -> (f64, f64, f64, f64) {
         max_y = center + 1.0;
     }
 
+    // Smart padding
     let x_range = max_x - min_x;
     let y_range = max_y - min_y;
     let padding_percent = 0.05;
@@ -610,8 +577,9 @@ fn calculate_auto_bounds(datasets: &[Dataset]) -> (f64, f64, f64, f64) {
     (padded_min_x, max_x + x_padding, padded_min_y, max_y + y_padding)
 }
 
-// Enhanced axis label drawing with custom ticks support
-fn draw_axis_labels_with_custom_ticks(
+
+
+fn draw_axis_labels(
     img: &mut image::RgbImage,
     min_x: f64,
     max_x: f64,
@@ -624,27 +592,11 @@ fn draw_axis_labels_with_custom_ticks(
     width: u32,
     height: u32,
     color: image::Rgb<u8>,
-    axis_config: Option<&AxisConfig>,
 ) {
-    // X-axis ticks and labels
-    let x_tick_values: Vec<f64> = if let Some(config) = axis_config {
-        if let Some(ref custom_x_ticks) = config.custom_x_ticks {
-            // Use custom ticks, but filter to only those within range
-            custom_x_ticks.iter()
-                .filter(|&&tick| tick >= min_x && tick <= max_x)
-                .copied()
-                .collect()
-        } else {
-            // Use default 6 evenly spaced ticks
-            (0..=6).map(|i| min_x + (max_x - min_x) * (i as f64 / 6.0)).collect()
-        }
-    } else {
-        // Use default 6 evenly spaced ticks
-        (0..=6).map(|i| min_x + (max_x - min_x) * (i as f64 / 6.0)).collect()
-    };
-
-    for &tick_value in &x_tick_values {
-        let x_pos = margin_left + ((tick_value - min_x) / (max_x - min_x) * plot_width as f64) as u32;
+    // X-axis ticks and labels - reduce number of ticks for large numbers
+    let num_x_ticks = 6; // Reduced from 8 to give more space
+    for i in 0..=num_x_ticks {
+        let x_pos = margin_left + (i * plot_width / num_x_ticks);
         let tick_y = height - margin_bottom;
         
         // Draw tick mark
@@ -654,37 +606,25 @@ fn draw_axis_labels_with_custom_ticks(
             }
         }
         
-        // Draw label
-        let text = format_number(tick_value);
-        let text_width = text.len() as u32 * 6;
+        let data_x = min_x + (max_x - min_x) * (i as f64 / num_x_ticks as f64);
+        
+        // Center the label under the tick mark with better spacing
+        let text = format_number(data_x);
+        let text_width = text.len() as u32 * 6; // 6 pixels per character
         let label_x = if x_pos >= text_width / 2 {
             x_pos - text_width / 2
         } else {
             0
         };
         
-        draw_number_pixels(img, label_x, tick_y + 20, tick_value, color);
+        // Move labels further down to avoid overlap with axis
+        draw_number_pixels(img, label_x, tick_y + 20, data_x, color);
     }
-
+    
     // Y-axis ticks and labels
-    let y_tick_values: Vec<f64> = if let Some(config) = axis_config {
-        if let Some(ref custom_y_ticks) = config.custom_y_ticks {
-            // Use custom ticks, but filter to only those within range
-            custom_y_ticks.iter()
-                .filter(|&&tick| tick >= min_y && tick <= max_y)
-                .copied()
-                .collect()
-        } else {
-            // Use default 6 evenly spaced ticks
-            (0..=6).map(|i| min_y + (max_y - min_y) * (i as f64 / 6.0)).collect()
-        }
-    } else {
-        // Use default 6 evenly spaced ticks
-        (0..=6).map(|i| min_y + (max_y - min_y) * (i as f64 / 6.0)).collect()
-    };
-
-    for &tick_value in &y_tick_values {
-        let y_pos = height - margin_bottom - ((tick_value - min_y) / (max_y - min_y) * plot_height as f64) as u32;
+    let num_y_ticks = 6;
+    for i in 0..=num_y_ticks {
+        let y_pos = height - margin_bottom - (i * plot_height / num_y_ticks);
         let tick_x = margin_left;
         
         // Draw tick mark
@@ -694,20 +634,20 @@ fn draw_axis_labels_with_custom_ticks(
             }
         }
         
-        // Draw label
-        let text = format_number(tick_value);
+        let data_y = min_y + (max_y - min_y) * (i as f64 / num_y_ticks as f64);
+        
+        // Right-align the Y labels to the left of the axis with more space
+        let text = format_number(data_y);
         let text_width = text.len() as u32 * 6;
         let label_x = if tick_x >= text_width + 15 {
-            tick_x - text_width - 15
+            tick_x - text_width - 15 // Increased spacing from 10 to 15
         } else {
             0
         };
         
-        draw_number_pixels(img, label_x, y_pos.saturating_sub(3), tick_value, color);
+        draw_number_pixels(img, label_x, y_pos.saturating_sub(3), data_y, color);
     }
 }
-
-// Keep all your existing drawing functions unchanged
 fn draw_number_pixels(
     img: &mut image::RgbImage,
     x: u32,
@@ -722,24 +662,58 @@ fn draw_number_pixels(
     }
 }
 
+
+
 fn draw_char_pixels(img: &mut image::RgbImage, x: u32, y: u32, ch: char, color: image::Rgb<u8>) {
     let pattern = match ch {
-        '0' => [0b01110, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01110],
-        '1' => [0b00100, 0b01100, 0b00100, 0b00100, 0b00100, 0b00100, 0b01110],
-        '2' => [0b01110, 0b10001, 0b00001, 0b00110, 0b01000, 0b10000, 0b11111],
-        '3' => [0b11111, 0b00010, 0b00100, 0b00110, 0b00001, 0b10001, 0b01110],
-        '4' => [0b00010, 0b00110, 0b01010, 0b10010, 0b11111, 0b00010, 0b00010],
-        '5' => [0b11111, 0b10000, 0b11110, 0b00001, 0b00001, 0b10001, 0b01110],
-        '6' => [0b00110, 0b01000, 0b10000, 0b11110, 0b10001, 0b10001, 0b01110],
-        '7' => [0b11111, 0b00001, 0b00010, 0b00100, 0b01000, 0b01000, 0b01000],
-        '8' => [0b01110, 0b10001, 0b10001, 0b01110, 0b10001, 0b10001, 0b01110],
-        '9' => [0b01110, 0b10001, 0b10001, 0b01111, 0b00001, 0b00010, 0b01100],
-        '.' => [0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b01100, 0b01100],
-        '-' => [0b00000, 0b00000, 0b00000, 0b11111, 0b00000, 0b00000, 0b00000],
-        'K' => [0b10001, 0b10010, 0b10100, 0b11000, 0b10100, 0b10010, 0b10001],
-        'M' => [0b10001, 0b11011, 0b10101, 0b10001, 0b10001, 0b10001, 0b10001],
-        'e' => [0b00000, 0b01110, 0b10001, 0b11111, 0b10000, 0b10001, 0b01110],
-        _ => [0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000],
+        '0' => [
+            0b01110, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01110,
+        ],
+        '1' => [
+            0b00100, 0b01100, 0b00100, 0b00100, 0b00100, 0b00100, 0b01110,
+        ],
+        '2' => [
+            0b01110, 0b10001, 0b00001, 0b00110, 0b01000, 0b10000, 0b11111,
+        ],
+        '3' => [
+            0b11111, 0b00010, 0b00100, 0b00110, 0b00001, 0b10001, 0b01110,
+        ],
+        '4' => [
+            0b00010, 0b00110, 0b01010, 0b10010, 0b11111, 0b00010, 0b00010,
+        ],
+        '5' => [
+            0b11111, 0b10000, 0b11110, 0b00001, 0b00001, 0b10001, 0b01110,
+        ],
+        '6' => [
+            0b00110, 0b01000, 0b10000, 0b11110, 0b10001, 0b10001, 0b01110,
+        ],
+        '7' => [
+            0b11111, 0b00001, 0b00010, 0b00100, 0b01000, 0b01000, 0b01000,
+        ],
+        '8' => [
+            0b01110, 0b10001, 0b10001, 0b01110, 0b10001, 0b10001, 0b01110,
+        ],
+        '9' => [
+            0b01110, 0b10001, 0b10001, 0b01111, 0b00001, 0b00010, 0b01100,
+        ],
+        '.' => [
+            0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b01100, 0b01100,
+        ],
+        '-' => [
+            0b00000, 0b00000, 0b00000, 0b11111, 0b00000, 0b00000, 0b00000,
+        ],
+        'K' => [
+            0b10001, 0b10010, 0b10100, 0b11000, 0b10100, 0b10010, 0b10001,
+        ],
+        'M' => [
+            0b10001, 0b11011, 0b10101, 0b10001, 0b10001, 0b10001, 0b10001,
+        ],
+        'e' => [
+            0b00000, 0b01110, 0b10001, 0b11111, 0b10000, 0b10001, 0b01110,
+        ],
+        _ => [
+            0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000,
+        ],
     };
 
     for (row, &pattern_row) in pattern.iter().enumerate() {
@@ -754,6 +728,7 @@ fn draw_char_pixels(img: &mut image::RgbImage, x: u32, y: u32, ch: char, color: 
         }
     }
 }
+
 
 fn draw_thick_line(
     img: &mut image::RgbImage,
@@ -815,6 +790,64 @@ fn draw_line_offset(
     }
 }
 
+fn draw_line(img: &mut image::RgbImage, x0: u32, y0: u32, x1: u32, y1: u32, color: image::Rgb<u8>) {
+    let dx = (x1 as i32 - x0 as i32).abs();
+    let dy = (y1 as i32 - y0 as i32).abs();
+    let sx = if x0 < x1 { 1 } else { -1 };
+    let sy = if y0 < y1 { 1 } else { -1 };
+    let mut err = dx - dy;
+    let mut x = x0 as i32;
+    let mut y = y0 as i32;
+
+    loop {
+        if x >= 0 && y >= 0 && (x as u32) < img.width() && (y as u32) < img.height() {
+            img.put_pixel(x as u32, y as u32, color);
+        }
+
+        if x == x1 as i32 && y == y1 as i32 {
+            break;
+        }
+
+        let e2 = 2 * err;
+        if e2 > -dy {
+            err -= dy;
+            x += sx;
+        }
+        if e2 < dx {
+            err += dx;
+            y += sy;
+        }
+    }
+}
+
+fn save_screenshot_with_dialog(
+    screenshot: &egui::ColorImage,
+) -> Result<(), Box<dyn std::error::Error>> {
+    if let Some(path) = rfd::FileDialog::new()
+        .add_filter("PNG Image", &["png"])
+        .set_file_name("plot.png")
+        .save_file()
+    {
+        let pixels = screenshot
+            .pixels
+            .iter()
+            .flat_map(|color| [color.r(), color.g(), color.b(), color.a()])
+            .collect::<Vec<u8>>();
+
+        let img = image::RgbaImage::from_raw(
+            screenshot.size[0] as u32,
+            screenshot.size[1] as u32,
+            pixels,
+        )
+        .ok_or("Failed to create image")?;
+
+        img.save(&path)?;
+        println!("Plot successfully saved as: {}", path.display());
+    }
+
+    Ok(())
+}
+
 fn load_csv_points(path: &PathBuf) -> Result<Vec<[f64; 2]>, Box<dyn std::error::Error>> {
     let mut rdr = csv::Reader::from_path(path)?;
     let mut out = Vec::new();
@@ -833,54 +866,37 @@ fn load_csv_points(path: &PathBuf) -> Result<Vec<[f64; 2]>, Box<dyn std::error::
     Ok(out)
 }
 
-fn load_xvg_points(path: &PathBuf) -> Result<Vec<[f64; 2]>, Box<dyn std::error::Error>> {
-    let file = File::open(path)?;
-    let reader = BufReader::new(file);
-    let mut points = Vec::new();
-
-    for line_result in reader.lines() {
-        let line = line_result?;
-        let line = line.trim();
-
-        if line.is_empty() || line.starts_with('#') || line.starts_with('@') {
-            continue;
-        }
-
-        let parts: Vec<&str> = line.split_whitespace().collect();
-
-        if parts.len() < 2 {
-            continue;
-        }
-
-        if let (Ok(x), Ok(y)) = (parts[0].parse::<f64>(), parts[1].parse::<f64>()) {
-            points.push([x, y]);
-        }
-    }
-
-    Ok(points)
-}
 
 fn format_number(value: f64) -> String {
     let abs_value = value.abs();
     
+    // Debug: print the value being formatted
+    println!("Formatting value: {}", value);
+    
     if abs_value >= 1_000_000.0 {
+        // For millions: 1.5M, 2.3M, etc.
         let m_value = value / 1_000_000.0;
         format!("{:.1}M", m_value)
     } else if abs_value >= 100_000.0 {
+        // For hundreds of thousands: 250K, 437K, etc.
         let k_value = value / 1000.0;
         format!("{:.0}K", k_value)
     } else if abs_value >= 10_000.0 {
+        // For tens of thousands: 87K, 43K, etc.
         let k_value = value / 1000.0;
         format!("{:.0}K", k_value)
     } else if abs_value >= 1000.0 {
+        // For thousands: 1000, 5000, etc.
         format!("{:.0}", value)
     } else if abs_value >= 1.0 {
+        // For regular numbers: 50, 123, etc.
         if value.fract().abs() < 0.01 {
             format!("{:.0}", value)
         } else {
             format!("{:.1}", value)
         }
     } else if abs_value >= 0.01 {
+        // For small decimals: 0.17, 0.29, etc.
         format!("{:.3}", value)
     } else if abs_value > f64::EPSILON {
         format!("{:.4}", value)
@@ -889,12 +905,15 @@ fn format_number(value: f64) -> String {
     }
 }
 
+
 fn pick_file() -> Option<PathBuf> {
     rfd::FileDialog::new()
         .add_filter("csv", &["csv"])
         .add_filter("xvg", &["xvg"])
         .pick_file()
 }
+
+
 
 fn main() {
     let args = Args::parse();

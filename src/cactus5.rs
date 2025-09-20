@@ -324,23 +324,12 @@ impl App for PlotterApp {
                         .show_axes([true, true])
                         .show_grid([self.show_grid, self.show_grid]);
 
-                    // Apply custom bounds to GUI plot in real-time
+                    // Apply custom bounds to GUI plot
                     if self.use_custom_bounds {
                         if let (Ok(min_x), Ok(max_x)) = (self.custom_x_min.parse::<f64>(), self.custom_x_max.parse::<f64>()) {
                             if let (Ok(min_y), Ok(max_y)) = (self.custom_y_min.parse::<f64>(), self.custom_y_max.parse::<f64>()) {
-                                // Apply padding to GUI plot as well
-                                let x_range = max_x - min_x;
-                                let y_range = max_y - min_y;
-                                let x_padding = x_range * (self.x_padding_percent / 100.0);
-                                let y_padding = y_range * (self.y_padding_percent / 100.0);
-                                
-                                let padded_min_x = min_x - x_padding;
-                                let padded_max_x = max_x + x_padding;
-                                let padded_min_y = min_y - y_padding;
-                                let padded_max_y = max_y + y_padding;
-                                
-                                plot = plot.include_x(padded_min_x).include_x(padded_max_x)
-                                          .include_y(padded_min_y).include_y(padded_max_y);
+                                plot = plot.include_x(min_x).include_x(max_x)
+                                          .include_y(min_y).include_y(max_y);
                             }
                         }
                     }
