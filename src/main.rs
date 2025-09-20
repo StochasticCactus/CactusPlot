@@ -342,7 +342,7 @@ if self.show_data_manipulation {
                 ui.label("Window size:");
                 ui.add(egui::Slider::new(
                     &mut self.rolling_window_size,
-                    2..=100,
+                    2..=1000,
                 ).text("points"));
             });
 
