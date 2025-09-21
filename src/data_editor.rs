@@ -512,7 +512,7 @@ impl DataEditor {
                 ui.horizontal(|ui| {
                     ui.label("Dataset:");
                     if !datasets.is_empty() {
-                        egui::ComboBox::from_label("")
+                        egui::ComboBox::from_id_source("fit_dataset_combo")
                             .selected_text(
                                 datasets.get(self.fitting_dataset_index)
                                     .map_or("None", |d| &d.name)
@@ -528,7 +528,7 @@ impl DataEditor {
                 // Model selection
                 ui.horizontal(|ui| {
                     ui.label("Model:");
-                    egui::ComboBox::from_label("")
+                    egui::ComboBox::from_id_source("fit_model_combo")
                         .selected_text(self.selected_fit_model.to_string())
                         .show_ui(ui, |ui| {
                             ui.selectable_value(&mut self.selected_fit_model, FitModel::Linear, FitModel::Linear.to_string());
