@@ -3,6 +3,8 @@ use crate::utils::*;
 use eframe::{egui, App, Frame};
 use rand::Rng;
 use egui_plot::{Legend, Line, Plot, PlotPoints};
+use crate::data_editor::DataEditor;
+
 #[derive(PartialEq)]
 #[derive(Debug, Clone)]
 pub enum FontSize {
@@ -159,6 +161,7 @@ pub struct PlotterApp {
     pub rolling_window_size: usize,
     pub selected_dataset_for_processing: usize,
     pub selected_dataset_for_color: usize,
+    pub data_editor: DataEditor,
 }
 
 impl Default for PlotterApp {
@@ -180,6 +183,7 @@ impl Default for PlotterApp {
             rolling_window_size: 10,
             selected_dataset_for_processing: 0,
             selected_dataset_for_color: 0,
+            data_editor: DataEditor::default(),
         };
         
         // Initialize with one subplot
@@ -333,6 +337,10 @@ impl App for PlotterApp {
                 if ui.button("📝 Legend & Fonts").clicked() {
                     self.show_legend_controls = !self.show_legend_controls;
                 }
+                
+                if ui.button("📊 Data Editor").clicked() {
+                    self.data_editor.show_editor = !self.data_editor.show_editor;
+                }
 
                 ui.horizontal(|ui| {
                     ui.label("Dark Mode:");
@@ -459,7 +467,19 @@ impl App for PlotterApp {
                 });
         }
 
-        // Show other control windows (axis, data manipulation, etc.)
+        // Data editor window
+        if self.data_editor.show_editor {
+            if let Some(subplot) = self.get_active_subplot() {
+                let mut datasets = subplot.datasets.clone();
+                self.data_editor.show_data_editor_window(ctx, &mut datasets);
+                
+                if let Some(subplot_mut) = self.get_active_subplot_mut() {
+                    subplot_mut.datasets = datasets;
+                }
+            }
+        }
+
+        // Show other control windows
         self.show_control_windows(ctx);
 
         // Main plot area with subplots

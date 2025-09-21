@@ -2,6 +2,8 @@ mod args;
 mod dataset;
 mod app;
 mod utils;
+mod data_editor; // Add this line
+
 use clap::Parser;
 use args::Args;
 use app::PlotterApp;
