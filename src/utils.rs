@@ -1,11 +1,9 @@
 use crate::dataset::Dataset;
+use crate::app::FontSize;
 use eframe::egui;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
-
-/* helper functions and other structs extracted from old_main.rs */
-
 
 pub struct AxisConfig {
    pub x_min: Option<f64>,
@@ -75,12 +73,13 @@ pub fn get_data_bounds(datasets: &[Dataset]) -> Option<(f64, f64, f64, f64)> {
     Some((min_x, max_x, min_y, max_y))
 }
 
-// Modified export function that accepts axis configuration
+// Modified export function that accepts axis configuration and font size
 pub fn export_plot_as_png_with_config(
     datasets: &[Dataset],
     dark_mode: bool,
     show_grid: bool,
     axis_config: Option<AxisConfig>,
+    font_size: &FontSize,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if datasets.is_empty() {
         return Err("No data to export".into());
@@ -165,8 +164,8 @@ pub fn export_plot_as_png_with_config(
             img_buffer.put_pixel(y_axis_x, y, axis_color);
         }
 
-        // Draw axis labels with custom ticks if specified
-        draw_axis_labels_with_custom_ticks(
+        // Draw axis labels with custom ticks and font size
+        draw_axis_labels_with_custom_ticks_and_font(
             &mut img_buffer,
             min_x,
             max_x,
@@ -180,6 +179,7 @@ pub fn export_plot_as_png_with_config(
             height,
             text_color,
             axis_config.as_ref(),
+            font_size,
         );
 
         // Draw datasets using their custom colors
@@ -270,8 +270,8 @@ pub fn calculate_auto_bounds(datasets: &[Dataset]) -> (f64, f64, f64, f64) {
     (padded_min_x, max_x + x_padding, padded_min_y, max_y + y_padding)
 }
 
-// Enhanced axis label drawing with custom ticks support
-pub fn draw_axis_labels_with_custom_ticks(
+// Enhanced axis label drawing with custom ticks and font size support
+pub fn draw_axis_labels_with_custom_ticks_and_font(
     img: &mut image::RgbImage,
     min_x: f64,
     max_x: f64,
@@ -285,7 +285,10 @@ pub fn draw_axis_labels_with_custom_ticks(
     height: u32,
     color: image::Rgb<u8>,
     axis_config: Option<&AxisConfig>,
+    font_size: &FontSize,
 ) {
+    let font_scale = font_size.to_scale();
+    
     // X-axis ticks and labels
     let x_tick_values: Vec<f64> = if let Some(config) = axis_config {
         if let Some(ref custom_x_ticks) = config.custom_x_ticks {
@@ -314,16 +317,17 @@ pub fn draw_axis_labels_with_custom_ticks(
             }
         }
         
-        // Draw label
+        // Draw label with font scaling
         let text = format_number(tick_value);
-        let text_width = text.len() as u32 * 6;
+        let char_width = (6.0 * font_scale) as u32;
+        let text_width = text.len() as u32 * char_width;
         let label_x = if x_pos >= text_width / 2 {
             x_pos - text_width / 2
         } else {
             0
         };
         
-        draw_number_pixels(img, label_x, tick_y + 20, tick_value, color);
+        draw_number_pixels_scaled(img, label_x, tick_y + 20, tick_value, color, font_scale);
     }
 
     // Y-axis ticks and labels
@@ -354,35 +358,71 @@ pub fn draw_axis_labels_with_custom_ticks(
             }
         }
         
-        // Draw label
+        // Draw label with font scaling
         let text = format_number(tick_value);
-        let text_width = text.len() as u32 * 6;
+        let char_width = (6.0 * font_scale) as u32;
+        let text_width = text.len() as u32 * char_width;
         let label_x = if tick_x >= text_width + 15 {
             tick_x - text_width - 15
         } else {
             0
         };
         
-        draw_number_pixels(img, label_x, y_pos.saturating_sub(3), tick_value, color);
+        let char_height = (7.0 * font_scale) as u32;
+        let label_y = y_pos.saturating_sub(char_height / 2);
+        
+        draw_number_pixels_scaled(img, label_x, label_y, tick_value, color, font_scale);
     }
 }
 
-// Keep all your existing drawing functions unchanged
-pub fn draw_number_pixels(
+// Legacy function for backward compatibility - redirect to new function with medium font
+pub fn draw_axis_labels_with_custom_ticks(
+    img: &mut image::RgbImage,
+    min_x: f64,
+    max_x: f64,
+    min_y: f64,
+    max_y: f64,
+    margin_left: u32,
+    margin_bottom: u32,
+    plot_width: u32,
+    plot_height: u32,
+    width: u32,
+    height: u32,
+    color: image::Rgb<u8>,
+    axis_config: Option<&AxisConfig>,
+) {
+    let font_size = FontSize::Medium;
+    draw_axis_labels_with_custom_ticks_and_font(
+        img, min_x, max_x, min_y, max_y, margin_left, margin_bottom,
+        plot_width, plot_height, width, height, color, axis_config, &font_size
+    );
+}
+
+// New function with font scaling support
+pub fn draw_number_pixels_scaled(
     img: &mut image::RgbImage,
     x: u32,
     y: u32,
     value: f64,
     color: image::Rgb<u8>,
+    scale: f32,
 ) {
     let text = format_number(value);
+    let char_width = (6.0 * scale) as u32;
     for (i, ch) in text.chars().enumerate() {
-        let char_x = x + (i as u32 * 6);
-        draw_char_pixels(img, char_x, y, ch, color);
+        let char_x = x + (i as u32 * char_width);
+        draw_char_pixels_scaled(img, char_x, y, ch, color, scale);
     }
 }
 
-pub fn draw_char_pixels(img: &mut image::RgbImage, x: u32, y: u32, ch: char, color: image::Rgb<u8>) {
+pub fn draw_char_pixels_scaled(
+    img: &mut image::RgbImage, 
+    x: u32, 
+    y: u32, 
+    ch: char, 
+    color: image::Rgb<u8>,
+    scale: f32
+) {
     let pattern = match ch {
         '0' => [0b01110, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01110],
         '1' => [0b00100, 0b01100, 0b00100, 0b00100, 0b00100, 0b00100, 0b01110],
@@ -402,17 +442,39 @@ pub fn draw_char_pixels(img: &mut image::RgbImage, x: u32, y: u32, ch: char, col
         _ => [0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000],
     };
 
+    let pixel_size = scale.max(1.0) as u32;
+
     for (row, &pattern_row) in pattern.iter().enumerate() {
         for col in 0..5 {
             if (pattern_row >> (4 - col)) & 1 == 1 {
-                let px = x + col;
-                let py = y + row as u32;
-                if px < img.width() && py < img.height() {
-                    img.put_pixel(px, py, color);
+                // Draw scaled pixel as a block
+                for dy in 0..pixel_size {
+                    for dx in 0..pixel_size {
+                        let px = x + (col * pixel_size) + dx;
+                        let py = y + (row as u32 * pixel_size) + dy;
+                        if px < img.width() && py < img.height() {
+                            img.put_pixel(px, py, color);
+                        }
+                    }
                 }
             }
         }
     }
+}
+
+// Keep the original functions for backward compatibility
+pub fn draw_number_pixels(
+    img: &mut image::RgbImage,
+    x: u32,
+    y: u32,
+    value: f64,
+    color: image::Rgb<u8>,
+) {
+    draw_number_pixels_scaled(img, x, y, value, color, 1.0);
+}
+
+pub fn draw_char_pixels(img: &mut image::RgbImage, x: u32, y: u32, ch: char, color: image::Rgb<u8>) {
+    draw_char_pixels_scaled(img, x, y, ch, color, 1.0);
 }
 
 pub fn draw_thick_line(
@@ -570,4 +632,3 @@ pub fn pick_file() -> Option<PathBuf> {
         .add_filter("xvg", &["xvg"])
         .pick_file()
 }
-

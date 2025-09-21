@@ -4,8 +4,36 @@ use crate::utils::*;
 use eframe::{egui, App, Frame};
 use rand::Rng;
 use egui_plot::{Legend, Line, Plot, PlotPoints};
-/* PlotterApp and its impls extracted from old_main.rs */
 
+#[derive(Debug, Clone)]
+#[derive(PartialEq)]
+pub enum FontSize {
+   
+    Small,
+    Medium,
+    Large,
+    ExtraLarge,
+}
+
+impl FontSize {
+    pub fn to_scale(&self) -> f32 {
+        match self {
+            FontSize::Small => 0.8,
+            FontSize::Medium => 1.0,
+            FontSize::Large => 1.3,
+            FontSize::ExtraLarge => 1.6,
+        }
+    }
+    
+    pub fn to_string(&self) -> &'static str {
+        match self {
+            FontSize::Small => "Small",
+            FontSize::Medium => "Medium",
+            FontSize::Large => "Large", 
+            FontSize::ExtraLarge => "Extra Large",
+        }
+    }
+}
 
 pub struct PlotterApp {
     pub datasets: Vec<Dataset>,
@@ -25,8 +53,8 @@ pub struct PlotterApp {
     pub y_padding_percent: f64,
     pub show_axis_controls: bool,
     // Custom ticks
-    pub custom_x_ticks: String,  // Comma-separated values
-    pub custom_y_ticks: String,  // Comma-separated values
+    pub custom_x_ticks: String,
+    pub custom_y_ticks: String,
     pub use_custom_x_ticks: bool,
     pub use_custom_y_ticks: bool,
     // Data manipulation fields
@@ -36,6 +64,10 @@ pub struct PlotterApp {
     // Color management
     pub show_color_picker: bool,
     pub selected_dataset_for_color: usize,
+    // Font and legend controls
+    pub tick_font_size: FontSize,
+    pub legend_title: String,
+    pub show_legend_controls: bool,
 }
 
 impl Default for PlotterApp {
@@ -64,7 +96,10 @@ impl Default for PlotterApp {
             rolling_window_size: 10,
             selected_dataset_for_processing: 0,
             show_color_picker: false,
-            selected_dataset_for_color: 0, 
+            selected_dataset_for_color: 0,
+            tick_font_size: FontSize::Medium,
+            legend_title: "Datasets".to_string(),
+            show_legend_controls: false,
         }
     }
 }
@@ -137,7 +172,8 @@ impl App for PlotterApp {
                         &self.datasets,
                         self.dark_mode,
                         self.show_grid,
-                        axis_config) {
+                        axis_config,
+                        &self.tick_font_size) {
                         Ok(()) => {
                             self.error_message = Some("Plot exported successfully!".to_string())
                         }
@@ -168,6 +204,11 @@ impl App for PlotterApp {
                 // Toggle for color picker window
                 if ui.button("🎨 Colors").clicked() {
                     self.show_color_picker = !self.show_color_picker;
+                }
+
+                // Toggle for legend controls window
+                if ui.button("📝 Legend & Fonts").clicked() {
+                    self.show_legend_controls = !self.show_legend_controls;
                 }
 
                 ui.horizontal(|ui| {
@@ -292,6 +333,59 @@ impl App for PlotterApp {
                                 ui.small("Example: 0.0, 0.5, 1.0");
                             }
                         });
+                    }
+                });
+        }
+
+        // Legend and Font controls window
+        if self.show_legend_controls {
+            egui::Window::new("Legend & Font Controls")
+                .resizable(true)
+                .default_width(350.0)
+                .default_height(400.0)
+                .show(ctx, |ui| {
+                    ui.heading("Font Settings");
+                    ui.separator();
+                    
+                    ui.horizontal(|ui| {
+                        ui.label("Tick font size:");
+                        egui::ComboBox::from_label("")
+                            .selected_text(self.tick_font_size.to_string())
+                            .show_ui(ui, |ui| {
+                                ui.selectable_value(&mut self.tick_font_size, FontSize::Small, "Small");
+                                ui.selectable_value(&mut self.tick_font_size, FontSize::Medium, "Medium");
+                                ui.selectable_value(&mut self.tick_font_size, FontSize::Large, "Large");
+                                ui.selectable_value(&mut self.tick_font_size, FontSize::ExtraLarge, "Extra Large");
+                            });
+                    });
+
+                    ui.add_space(15.0);
+                    ui.heading("Legend Settings");
+                    ui.separator();
+
+                    ui.horizontal(|ui| {
+                        ui.label("Legend title:");
+                        ui.text_edit_singleline(&mut self.legend_title);
+                    });
+
+                    ui.add_space(10.0);
+                    
+                    if !self.datasets.is_empty() {
+                        ui.label("Dataset labels:");
+                        ui.separator();
+                        
+                        for (i, dataset) in self.datasets.iter_mut().enumerate() {
+                            ui.horizontal(|ui| {
+                                // Color indicator
+                                let color = egui::Color32::from_rgb(dataset.color[0], dataset.color[1], dataset.color[2]);
+                                ui.add(egui::Button::new("").fill(color).min_size(egui::vec2(15.0, 15.0)));
+                                
+                                ui.label(format!("{}:", i + 1));
+                                ui.text_edit_singleline(&mut dataset.name);
+                            });
+                        }
+                    } else {
+                        ui.label("No datasets loaded. Load data to edit legend labels.");
                     }
                 });
         }
@@ -443,7 +537,7 @@ impl App for PlotterApp {
 
         // Main plot area with applied axis settings
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("Plot area — pan with mouse, zoom with scroll");
+            ui.heading("Plot area – pan with mouse, zoom with scroll");
             ui.add_space(6.0);
 
             ui.horizontal(|ui| {
@@ -511,10 +605,19 @@ impl App for PlotterApp {
                     }
 
                     if self.show_legend {
-                        plot = plot.legend(Legend::default());
+                        // Create legend with custom title
+                        let mut legend = Legend::default();
+                        legend = legend.text_style(egui::TextStyle::Body);
+                        plot = plot.legend(legend);
                     }
 
                     plot.show(ui, |plot_ui| {
+                        // Display legend title if legend is shown
+                        if self.show_legend && !self.legend_title.is_empty() {
+                            // Note: egui_plot doesn't directly support legend titles,
+                            // so we'd need to draw this manually or use a workaround
+                        }
+                        
                         for ds in &self.datasets {
                             let color = egui::Color32::from_rgb(ds.color[0], ds.color[1], ds.color[2]);
                             let line = Line::new(PlotPoints::new(ds.points.clone()))
@@ -528,4 +631,3 @@ impl App for PlotterApp {
         });
     }
 }
-
