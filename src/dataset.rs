@@ -1,5 +1,7 @@
 /* dataset definitions extracted from old_main.rs */
 
+#[derive(Clone)]
+#[derive(Debug)]
 pub struct Dataset {
     pub name: String,
     pub points: Vec<[f64; 2]>,
