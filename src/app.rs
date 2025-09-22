@@ -1,12 +1,11 @@
+use crate::data_editor::DataEditor;
 use crate::dataset::Dataset;
 use crate::utils::*;
 use eframe::{egui, App, Frame};
-use rand::Rng;
 use egui_plot::{Legend, Line, Plot, PlotPoints};
-use crate::data_editor::DataEditor;
+use rand::Rng;
 
-#[derive(PartialEq)]
-#[derive(Debug, Clone)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum FontSize {
     Small,
     Medium,
@@ -23,12 +22,12 @@ impl FontSize {
             FontSize::ExtraLarge => 1.6,
         }
     }
-    
+
     pub fn to_string(&self) -> &'static str {
         match self {
             FontSize::Small => "Small",
             FontSize::Medium => "Medium",
-            FontSize::Large => "Large", 
+            FontSize::Large => "Large",
             FontSize::ExtraLarge => "Extra Large",
         }
     }
@@ -117,7 +116,7 @@ impl SubplotLayout {
             SubplotLayout::Grid2x3 => "Grid (2x3)",
         }
     }
-    
+
     pub fn dimensions(&self) -> (usize, usize) {
         match self {
             SubplotLayout::Single => (1, 1),
@@ -130,7 +129,7 @@ impl SubplotLayout {
             SubplotLayout::Grid2x3 => (2, 3),
         }
     }
-    
+
     pub fn subplot_count(&self) -> usize {
         let (rows, cols) = self.dimensions();
         rows * cols
@@ -143,20 +142,20 @@ pub struct PlotterApp {
     pub subplot_layout: SubplotLayout,
     pub active_subplot: usize,
     pub show_subplot_controls: bool,
-    
+
     // Global settings
     pub next_name_index: usize,
     pub error_message: Option<String>,
     pub dark_mode: bool,
     pub screenshot_requested: bool,
     pub tick_font_size: FontSize,
-    
+
     // UI state
     pub show_axis_controls: bool,
     pub show_data_manipulation: bool,
     pub show_color_picker: bool,
     pub show_legend_controls: bool,
-    
+
     // Data manipulation fields
     pub rolling_window_size: usize,
     pub selected_dataset_for_processing: usize,
@@ -185,7 +184,7 @@ impl Default for PlotterApp {
             selected_dataset_for_color: 0,
             data_editor: DataEditor::default(),
         };
-        
+
         // Initialize with one subplot
         app.ensure_subplots_match_layout();
         app
@@ -195,28 +194,28 @@ impl Default for PlotterApp {
 impl PlotterApp {
     fn ensure_subplots_match_layout(&mut self) {
         let required_count = self.subplot_layout.subplot_count();
-        
+
         // Remove excess subplots
         if self.subplots.len() > required_count {
             self.subplots.truncate(required_count);
         }
-        
+
         // Add missing subplots
         while self.subplots.len() < required_count {
             let id = format!("subplot_{}", self.subplots.len());
             self.subplots.push(Subplot::new(id));
         }
-        
+
         // Ensure active subplot is valid
         if self.active_subplot >= self.subplots.len() {
             self.active_subplot = 0;
         }
     }
-    
+
     pub fn get_active_subplot_mut(&mut self) -> Option<&mut Subplot> {
         self.subplots.get_mut(self.active_subplot)
     }
-    
+
     pub fn get_active_subplot(&self) -> Option<&Subplot> {
         self.subplots.get(self.active_subplot)
     }
@@ -241,10 +240,15 @@ impl App for PlotterApp {
                                     let name = format!("data{}", self.next_name_index);
                                     self.next_name_index += 1;
                                     let color = get_default_color(
-                                        self.get_active_subplot().map_or(0, |s| s.datasets.len()) % 8
+                                        self.get_active_subplot().map_or(0, |s| s.datasets.len())
+                                            % 8,
                                     );
                                     if let Some(subplot) = self.get_active_subplot_mut() {
-                                        subplot.datasets.push(Dataset { name, points, color });
+                                        subplot.datasets.push(Dataset {
+                                            name,
+                                            points,
+                                            color,
+                                        });
                                     }
                                     self.error_message = None;
                                 }
@@ -257,10 +261,15 @@ impl App for PlotterApp {
                                     let name = format!("data{}", self.next_name_index);
                                     self.next_name_index += 1;
                                     let color = get_default_color(
-                                        self.get_active_subplot().map_or(0, |s| s.datasets.len()) % 8
+                                        self.get_active_subplot().map_or(0, |s| s.datasets.len())
+                                            % 8,
                                     );
                                     if let Some(subplot) = self.get_active_subplot_mut() {
-                                        subplot.datasets.push(Dataset { name, points, color });
+                                        subplot.datasets.push(Dataset {
+                                            name,
+                                            points,
+                                            color,
+                                        });
                                     }
                                     self.error_message = None;
                                 }
@@ -283,7 +292,8 @@ impl App for PlotterApp {
                         &self.subplots,
                         &self.subplot_layout,
                         self.dark_mode,
-                        &self.tick_font_size) {
+                        &self.tick_font_size,
+                    ) {
                         Ok(()) => {
                             self.error_message = Some("Plot exported successfully!".to_string())
                         }
@@ -337,7 +347,7 @@ impl App for PlotterApp {
                 if ui.button("📝 Legend & Fonts").clicked() {
                     self.show_legend_controls = !self.show_legend_controls;
                 }
-                
+
                 if ui.button("📊 Data Editor").clicked() {
                     self.data_editor.show_editor = !self.data_editor.show_editor;
                 }
@@ -384,10 +394,14 @@ impl App for PlotterApp {
                     let name = format!("random{}", self.next_name_index);
                     self.next_name_index += 1;
                     let color = get_default_color(
-                        self.get_active_subplot().map_or(0, |s| s.datasets.len()) % 8
+                        self.get_active_subplot().map_or(0, |s| s.datasets.len()) % 8,
                     );
                     if let Some(subplot) = self.get_active_subplot_mut() {
-                        subplot.datasets.push(Dataset { name, points: pts, color });
+                        subplot.datasets.push(Dataset {
+                            name,
+                            points: pts,
+                            color,
+                        });
                     }
                 }
             });
@@ -450,8 +464,7 @@ impl App for PlotterApp {
                     }
 
                     ui.add_space(10.0);
-                    ui.separator();
-                    
+                    ui.separator(); 
                     // Subplot titles
                     ui.heading("Subplot Titles");
                     for (i, subplot) in self.subplots.iter_mut().enumerate() {
@@ -472,7 +485,7 @@ impl App for PlotterApp {
             if let Some(subplot) = self.get_active_subplot() {
                 let mut datasets = subplot.datasets.clone();
                 self.data_editor.show_data_editor_window(ctx, &mut datasets);
-                
+
                 if let Some(subplot_mut) = self.get_active_subplot_mut() {
                     subplot_mut.datasets = datasets;
                 }
@@ -488,7 +501,7 @@ impl App for PlotterApp {
             ui.add_space(6.0);
 
             let (rows, cols) = self.subplot_layout.dimensions();
-            
+
             // Create subplot grid
             egui::Grid::new("subplot_grid")
                 .num_columns(cols)
@@ -522,19 +535,24 @@ impl PlotterApp {
             return;
         };
 
-        let subplot_datasets: Vec<(String, [u8; 3])> = if let Some(subplot) = self.subplots.get(subplot_index) {
-            subplot.datasets.iter().map(|ds| (ds.name.clone(), ds.color)).collect()
-        } else {
-            Vec::new()
-        };
-        
+        let subplot_datasets: Vec<(String, [u8; 3])> =
+            if let Some(subplot) = self.subplots.get(subplot_index) {
+                subplot
+                    .datasets
+                    .iter()
+                    .map(|ds| (ds.name.clone(), ds.color))
+                    .collect()
+            } else {
+                Vec::new()
+            };
+
         ui.vertical(|ui| {
             // Subplot header with selection
             ui.horizontal(|ui| {
                 if ui.selectable_label(is_active, &subplot_title).clicked() {
                     self.active_subplot = subplot_index;
                 }
-                
+
                 if is_active {
                     ui.colored_label(egui::Color32::from_rgb(0, 200, 0), " (Active)");
                 }
@@ -552,7 +570,7 @@ impl PlotterApp {
                             // Clickable color square
                             let color_size = egui::vec2(12.0, 12.0);
                             let egui_color = egui::Color32::from_rgb(color[0], color[1], color[2]);
-                            
+
                             if ui
                                 .add(egui::Button::new("").fill(egui_color).min_size(color_size))
                                 .on_hover_text("Click to change color")
@@ -570,7 +588,7 @@ impl PlotterApp {
                             }
                         });
                     }
-                    
+
                     // Apply removal after iteration
                     if let Some(remove_idx) = remove_index {
                         if let Some(subplot_mut) = self.subplots.get_mut(subplot_index) {
@@ -610,19 +628,47 @@ impl PlotterApp {
                         if subplot.config.use_custom_bounds {
                             if let (Ok(min_x), Ok(max_x)) = (
                                 subplot.config.custom_x_min.parse::<f64>(),
-                                subplot.config.custom_x_max.parse::<f64>()
+                                subplot.config.custom_x_max.parse::<f64>(),
                             ) {
                                 if let (Ok(min_y), Ok(max_y)) = (
                                     subplot.config.custom_y_min.parse::<f64>(),
-                                    subplot.config.custom_y_max.parse::<f64>()
+                                    subplot.config.custom_y_max.parse::<f64>(),
                                 ) {
                                     let x_range = max_x - min_x;
                                     let y_range = max_y - min_y;
-                                    let x_padding = x_range * (subplot.config.x_padding_percent / 100.0);
-                                    let y_padding = y_range * (subplot.config.y_padding_percent / 100.0);
-                                    
-                                    plot = plot.include_x(min_x - x_padding).include_x(max_x + x_padding)
-                                              .include_y(min_y - y_padding).include_y(max_y + y_padding);
+                                    let x_padding =
+                                        x_range * (subplot.config.x_padding_percent / 100.0);
+                                    let y_padding =
+                                        y_range * (subplot.config.y_padding_percent / 100.0);
+
+                                    plot = plot
+                                        .include_x(min_x - x_padding)
+                                        .include_x(max_x + x_padding)
+                                        .include_y(min_y - y_padding)
+                                        .include_y(max_y + y_padding);
+                                }
+                            }
+                        } else {
+                            // FIXED: Automatically include data bounds when custom bounds are not set
+                            if !subplot.datasets.is_empty() {
+                                if let Some((min_x, max_x, min_y, max_y)) =
+                                    get_data_bounds(&subplot.datasets)
+                                {
+                                    // Add some padding (5% by default)
+                                    let x_range = max_x - min_x;
+                                    let y_range = max_y - min_y;
+
+                                    // Handle case where range is zero (single point or constant values)
+                                    let x_padding =
+                                        if x_range > 0.0 { x_range * 0.05 } else { 1.0 };
+                                    let y_padding =
+                                        if y_range > 0.0 { y_range * 0.05 } else { 1.0 };
+
+                                    plot = plot
+                                        .include_x(min_x - x_padding)
+                                        .include_x(max_x + x_padding)
+                                        .include_y(min_y - y_padding)
+                                        .include_y(max_y + y_padding);
                                 }
                             }
                         }
@@ -633,7 +679,8 @@ impl PlotterApp {
 
                         plot.show(ui, |plot_ui| {
                             for ds in &subplot.datasets {
-                                let color = egui::Color32::from_rgb(ds.color[0], ds.color[1], ds.color[2]);
+                                let color =
+                                    egui::Color32::from_rgb(ds.color[0], ds.color[1], ds.color[2]);
                                 let line = Line::new(PlotPoints::new(ds.points.clone()))
                                     .name(&ds.name)
                                     .color(color);
@@ -645,7 +692,6 @@ impl PlotterApp {
             });
         });
     }
-
     fn show_control_windows(&mut self, ctx: &egui::Context) {
         // Axis controls window
         if self.show_axis_controls {
@@ -655,14 +701,19 @@ impl PlotterApp {
                 .default_height(300.0)
                 .show(ctx, |ui| {
                     if let Some(subplot) = self.get_active_subplot_mut() {
-                        ui.checkbox(&mut subplot.config.use_custom_bounds, "Override Automatic Axis Ranges");
+                        ui.checkbox(
+                            &mut subplot.config.use_custom_bounds,
+                            "Override Automatic Axis Ranges",
+                        );
 
                         if subplot.config.use_custom_bounds {
                             ui.separator();
 
                             // Auto-fill button
                             if ui.button("Auto-fill from data").clicked() {
-                                if let Some((min_x, max_x, min_y, max_y)) = get_data_bounds(&subplot.datasets) {
+                                if let Some((min_x, max_x, min_y, max_y)) =
+                                    get_data_bounds(&subplot.datasets)
+                                {
                                     subplot.config.custom_x_min = min_x.to_string();
                                     subplot.config.custom_x_max = max_x.to_string();
                                     subplot.config.custom_y_min = format!("{:.3}", min_y);
@@ -683,11 +734,19 @@ impl PlotterApp {
                                 });
                                 ui.horizontal(|ui| {
                                     ui.label("Padding:");
-                                    ui.add(egui::Slider::new(&mut subplot.config.x_padding_percent, 0.0..=20.0)
-                                           .suffix("%"));
+                                    ui.add(
+                                        egui::Slider::new(
+                                            &mut subplot.config.x_padding_percent,
+                                            0.0..=20.0,
+                                        )
+                                        .suffix("%"),
+                                    );
                                 });
-                                
-                                ui.checkbox(&mut subplot.config.use_custom_x_ticks, "Custom X-axis ticks");
+
+                                ui.checkbox(
+                                    &mut subplot.config.use_custom_x_ticks,
+                                    "Custom X-axis ticks",
+                                );
                                 if subplot.config.use_custom_x_ticks {
                                     ui.label("X-axis tick values (comma-separated):");
                                     ui.text_edit_multiline(&mut subplot.config.custom_x_ticks);
@@ -708,11 +767,19 @@ impl PlotterApp {
                                 });
                                 ui.horizontal(|ui| {
                                     ui.label("Padding:");
-                                    ui.add(egui::Slider::new(&mut subplot.config.y_padding_percent, 0.0..=20.0)
-                                           .suffix("%"));
+                                    ui.add(
+                                        egui::Slider::new(
+                                            &mut subplot.config.y_padding_percent,
+                                            0.0..=20.0,
+                                        )
+                                        .suffix("%"),
+                                    );
                                 });
-                                
-                                ui.checkbox(&mut subplot.config.use_custom_y_ticks, "Custom Y-axis ticks");
+
+                                ui.checkbox(
+                                    &mut subplot.config.use_custom_y_ticks,
+                                    "Custom Y-axis ticks",
+                                );
                                 if subplot.config.use_custom_y_ticks {
                                     ui.label("Y-axis tick values (comma-separated):");
                                     ui.text_edit_multiline(&mut subplot.config.custom_y_ticks);
@@ -736,7 +803,7 @@ impl PlotterApp {
             self.show_color_picker_window(ctx);
         }
 
-        // Legend controls window  
+        // Legend controls window
         if self.show_legend_controls {
             self.show_legend_controls_window(ctx);
         }
@@ -750,10 +817,13 @@ impl PlotterApp {
             .show(ctx, |ui| {
                 let subplot_info = if let Some(subplot) = self.get_active_subplot() {
                     if subplot.datasets.is_empty() {
-                        ui.label("No datasets in active subplot. Load data first to enable processing.");
+                        ui.label(
+                            "No datasets in active subplot. Load data first to enable processing.",
+                        );
                         return;
                     }
-                    let dataset_names: Vec<String> = subplot.datasets.iter().map(|d| d.name.clone()).collect();
+                    let dataset_names: Vec<String> =
+                        subplot.datasets.iter().map(|d| d.name.clone()).collect();
                     Some((dataset_names, subplot.datasets.len()))
                 } else {
                     ui.label("No active subplot selected.");
@@ -773,7 +843,11 @@ impl PlotterApp {
                             .selected_text(&dataset_names[self.selected_dataset_for_processing])
                             .show_ui(ui, |ui| {
                                 for (i, name) in dataset_names.iter().enumerate() {
-                                    ui.selectable_value(&mut self.selected_dataset_for_processing, i, name);
+                                    ui.selectable_value(
+                                        &mut self.selected_dataset_for_processing,
+                                        i,
+                                        name,
+                                    );
                                 }
                             });
                     }
@@ -784,22 +858,31 @@ impl PlotterApp {
                 // Window size setting
                 ui.horizontal(|ui| {
                     ui.label("Window size:");
-                    ui.add(egui::Slider::new(&mut self.rolling_window_size, 2..=100).text("points"));
+                    ui.add(
+                        egui::Slider::new(&mut self.rolling_window_size, 2..=100).text("points"),
+                    );
                 });
 
                 ui.add_space(10.0);
 
                 // Show preview info
                 if let Some(subplot) = self.get_active_subplot() {
-                    if let Some(dataset) = subplot.datasets.get(self.selected_dataset_for_processing) {
+                    if let Some(dataset) =
+                        subplot.datasets.get(self.selected_dataset_for_processing)
+                    {
                         ui.label(format!("Original dataset: {} points", dataset.points.len()));
-                        
+
                         if dataset.points.len() >= self.rolling_window_size {
                             let result_points = dataset.points.len() - self.rolling_window_size + 1;
-                            ui.label(format!("Rolling average will have: {} points", result_points));
+                            ui.label(format!(
+                                "Rolling average will have: {} points",
+                                result_points
+                            ));
                         } else {
-                            ui.colored_label(egui::Color32::from_rgb(255, 165, 0), 
-                                "Warning: Window size larger than dataset!");
+                            ui.colored_label(
+                                egui::Color32::from_rgb(255, 165, 0),
+                                "Warning: Window size larger than dataset!",
+                            );
                         }
                     }
                 }
@@ -809,12 +892,19 @@ impl PlotterApp {
                 // Compute button
                 if ui.button("🔄 Compute Rolling Average").clicked() {
                     if let Some(subplot) = self.get_active_subplot() {
-                        if let Some(source_dataset) = subplot.datasets.get(self.selected_dataset_for_processing) {
+                        if let Some(source_dataset) =
+                            subplot.datasets.get(self.selected_dataset_for_processing)
+                        {
                             if source_dataset.points.len() >= self.rolling_window_size {
-                                match compute_rolling_average(&source_dataset.points, self.rolling_window_size) {
+                                match compute_rolling_average(
+                                    &source_dataset.points,
+                                    self.rolling_window_size,
+                                ) {
                                     Ok(rolling_avg_points) => {
-                                        let new_name = format!("{}_rolling_avg_{}", 
-                                            source_dataset.name, self.rolling_window_size);
+                                        let new_name = format!(
+                                            "{}_rolling_avg_{}",
+                                            source_dataset.name, self.rolling_window_size
+                                        );
                                         let new_dataset = Dataset {
                                             name: new_name,
                                             points: rolling_avg_points,
@@ -826,14 +916,16 @@ impl PlotterApp {
                                         self.error_message = Some(format!(
                                             "Rolling average computed! Added to active subplot."
                                         ));
-                                    },
+                                    }
                                     Err(e) => {
-                                        self.error_message = Some(format!("Error computing rolling average: {}", e));
+                                        self.error_message =
+                                            Some(format!("Error computing rolling average: {}", e));
                                     }
                                 }
                             } else {
                                 self.error_message = Some(
-                                    "Window size must be smaller than or equal to dataset size.".to_string()
+                                    "Window size must be smaller than or equal to dataset size."
+                                        .to_string(),
                                 );
                             }
                         }
@@ -842,7 +934,9 @@ impl PlotterApp {
 
                 ui.add_space(10.0);
                 ui.separator();
-                ui.small("The rolling average will be added as a new dataset in the active subplot.");
+                ui.small(
+                    "The rolling average will be added as a new dataset in the active subplot.",
+                );
             });
     }
 
@@ -855,10 +949,14 @@ impl PlotterApp {
                 // Get subplot info first to avoid borrowing conflicts
                 let subplot_info = if let Some(subplot) = self.get_active_subplot() {
                     if subplot.datasets.is_empty() {
-                        ui.label("No datasets in active subplot. Load data first to customize colors.");
+                        ui.label(
+                            "No datasets in active subplot. Load data first to customize colors.",
+                        );
                         return;
                     }
-                    let dataset_info: Vec<(String, [u8; 3])> = subplot.datasets.iter()
+                    let dataset_info: Vec<(String, [u8; 3])> = subplot
+                        .datasets
+                        .iter()
                         .map(|ds| (ds.name.clone(), ds.color))
                         .collect();
                     Some(dataset_info)
@@ -879,9 +977,13 @@ impl PlotterApp {
                         // Color square button
                         let color_button_size = egui::vec2(30.0, 20.0);
                         let egui_color = egui::Color32::from_rgb(color[0], color[1], color[2]);
-                        
+
                         if ui
-                            .add(egui::Button::new("").fill(egui_color).min_size(color_button_size))
+                            .add(
+                                egui::Button::new("")
+                                    .fill(egui_color)
+                                    .min_size(color_button_size),
+                            )
                             .clicked()
                         {
                             self.selected_dataset_for_color = i;
@@ -893,9 +995,11 @@ impl PlotterApp {
                     // Color picker for selected dataset
                     if i == self.selected_dataset_for_color {
                         ui.indent("color_picker", |ui| {
-                            let mut egui_color = egui::Color32::from_rgb(color[0], color[1], color[2]);
+                            let mut egui_color =
+                                egui::Color32::from_rgb(color[0], color[1], color[2]);
                             if ui.color_edit_button_srgba(&mut egui_color).changed() {
-                                selected_color_changed = Some((i, [egui_color.r(), egui_color.g(), egui_color.b()]));
+                                selected_color_changed =
+                                    Some((i, [egui_color.r(), egui_color.g(), egui_color.b()]));
                             }
                         });
                     }
@@ -904,7 +1008,7 @@ impl PlotterApp {
                 }
 
                 ui.separator();
-                
+
                 if ui.button("Reset to Default Colors").clicked() {
                     reset_colors = true;
                 }
@@ -936,16 +1040,24 @@ impl PlotterApp {
             .show(ctx, |ui| {
                 ui.heading("Font Settings");
                 ui.separator();
-                
+
                 ui.horizontal(|ui| {
                     ui.label("Tick font size:");
                     egui::ComboBox::from_label("")
                         .selected_text(self.tick_font_size.to_string())
                         .show_ui(ui, |ui| {
                             ui.selectable_value(&mut self.tick_font_size, FontSize::Small, "Small");
-                            ui.selectable_value(&mut self.tick_font_size, FontSize::Medium, "Medium");
+                            ui.selectable_value(
+                                &mut self.tick_font_size,
+                                FontSize::Medium,
+                                "Medium",
+                            );
                             ui.selectable_value(&mut self.tick_font_size, FontSize::Large, "Large");
-                            ui.selectable_value(&mut self.tick_font_size, FontSize::ExtraLarge, "Extra Large");
+                            ui.selectable_value(
+                                &mut self.tick_font_size,
+                                FontSize::ExtraLarge,
+                                "Extra Large",
+                            );
                         });
                 });
 
@@ -960,17 +1072,25 @@ impl PlotterApp {
                     });
 
                     ui.add_space(10.0);
-                    
+
                     if !subplot.datasets.is_empty() {
                         ui.label("Dataset labels:");
                         ui.separator();
-                        
+
                         for (i, dataset) in subplot.datasets.iter_mut().enumerate() {
                             ui.horizontal(|ui| {
                                 // Color indicator
-                                let color = egui::Color32::from_rgb(dataset.color[0], dataset.color[1], dataset.color[2]);
-                                ui.add(egui::Button::new("").fill(color).min_size(egui::vec2(15.0, 15.0)));
-                                
+                                let color = egui::Color32::from_rgb(
+                                    dataset.color[0],
+                                    dataset.color[1],
+                                    dataset.color[2],
+                                );
+                                ui.add(
+                                    egui::Button::new("")
+                                        .fill(color)
+                                        .min_size(egui::vec2(15.0, 15.0)),
+                                );
+
                                 ui.label(format!("{}:", i + 1));
                                 ui.text_edit_singleline(&mut dataset.name);
                             });

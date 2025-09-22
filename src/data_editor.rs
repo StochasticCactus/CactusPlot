@@ -162,15 +162,15 @@ impl DataEditor {
                 
                 // Action buttons
                 ui.horizontal(|ui| {
-                    if ui.button("📊 Transform Row to Dataset").clicked() {
+                    if ui.button("ðŸ“Š Transform Row to Dataset").clicked() {
                         self.show_transform_dialog = true;
                     }
                     
-                    if ui.button("📈 Fit Curve").clicked() {
+                    if ui.button("ðŸ“ˆ Fit Curve").clicked() {
                         self.show_fitting_dialog = true;
                     }
                     
-                    if ui.button("📋 Paste Data").clicked() {
+                    if ui.button("ðŸ“‹ Paste Data").clicked() {
                         self.show_paste_dialog = !self.show_paste_dialog;
                     }
                     
@@ -540,7 +540,7 @@ impl DataEditor {
                 ui.separator();
                 
                 // Fit button
-                if ui.button("🔬 Perform Fit").clicked() {
+                if ui.button("ðŸ”¬ Perform Fit").clicked() {
                     if let Some(dataset) = datasets.get(self.fitting_dataset_index) {
                         if let Some(fit_result) = self.perform_curve_fit(dataset) {
                             self.fit_results.push(fit_result.clone());
@@ -566,7 +566,7 @@ impl DataEditor {
                         for (i, result) in self.fit_results.iter().enumerate() {
                             ui.group(|ui| {
                                 ui.label(format!("Fit {}: {}", i + 1, result.model.to_string()));
-                                ui.label(format!("R² = {:.4}", result.r_squared));
+                                ui.label(format!("RÂ² = {:.4}", result.r_squared));
                                 ui.label(&result.equation_string);
                                 
                                 for (param_name, param_value) in result.parameter_names.iter().zip(&result.parameters) {
@@ -610,7 +610,7 @@ impl DataEditor {
         let slope = (n * sum_xy - sum_x * sum_y) / (n * sum_x2 - sum_x * sum_x);
         let intercept = (sum_y - slope * sum_x) / n;
         
-        // Calculate R²
+        // Calculate RÂ²
         let y_mean = sum_y / n;
         let ss_tot: f64 = dataset.points.iter().map(|p| (p[1] - y_mean).powi(2)).sum();
         let ss_res: f64 = dataset.points.iter().map(|p| {
@@ -667,7 +667,7 @@ impl DataEditor {
             fitted_points.push([x, y]);
         }
         
-        // Calculate R²
+        // Calculate RÂ²
         let y_mean = dataset.points.iter().map(|p| p[1]).sum::<f64>() / dataset.points.len() as f64;
         let ss_tot: f64 = dataset.points.iter().map(|p| (p[1] - y_mean).powi(2)).sum();
         let ss_res: f64 = dataset.points.iter().map(|p| {
@@ -716,7 +716,7 @@ impl DataEditor {
             }
         }
         
-        // Calculate R²
+        // Calculate RÂ²
         let y_mean = dataset.points.iter().map(|p| p[1]).sum::<f64>() / dataset.points.len() as f64;
         let ss_tot: f64 = dataset.points.iter().map(|p| (p[1] - y_mean).powi(2)).sum();
         let ss_res: f64 = dataset.points.iter().map(|p| {
