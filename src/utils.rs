@@ -939,3 +939,11 @@ pub fn pick_file() -> Option<PathBuf> {
         .add_filter("xvg", &["xvg"])
         .pick_file()
 }
+pub fn pick_multiple_files() -> Option<Vec<PathBuf>> {
+    rfd::FileDialog::new()
+        .add_filter("Data files", &["csv", "xvg"])
+        .add_filter("CSV", &["csv"])
+        .add_filter("XVG", &["xvg"])
+        .pick_files()
+}
+
