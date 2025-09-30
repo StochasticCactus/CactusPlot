@@ -2,6 +2,8 @@
 
 ## 📖 About
 
+CactusPlot is a lightweight XMGRACE-style plotting application. It allows you to create simple, clean, and customizable plots with minimal effort.
+
 This project started as a quick attempt to solve a small problem of mine.
 I don’t know much Rust (to be honest: close to nothing), and the initial version was generated almost entirely by AI.
 
