@@ -1,16 +1,23 @@
+// Import external modules or crates needed in data_editor.rs
 use crate::dataset::Dataset;
+// Import external modules or crates needed in data_editor.rs
 use crate::utils::get_default_color;
+// Import external modules or crates needed in data_editor.rs
 use eframe::egui;
+// Import external modules or crates needed in data_editor.rs
 use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
+/// Data structure used in data_editor.rs module
 pub struct DataCell {
     pub value: String,
     pub parsed_value: Option<f64>,
     pub is_header: bool,
 }
 
+/// Implementation block defining methods for this type
 impl Default for DataCell {
+/// Function: explain its purpose and key arguments
     fn default() -> Self {
         Self {
             value: String::new(),
@@ -21,6 +28,7 @@ impl Default for DataCell {
 }
 
 #[derive(Debug, Clone)]
+/// Data structure used in data_editor.rs module
 pub struct SpreadsheetData {
     pub cells: HashMap<(usize, usize), DataCell>, // (row, col) -> cell
     pub num_rows: usize,
@@ -29,9 +37,13 @@ pub struct SpreadsheetData {
     pub dataset_columns: Vec<Option<usize>>, // Maps column index to dataset index
 }
 
+/// Implementation block defining methods for this type
 impl Default for SpreadsheetData {
+/// Function: explain its purpose and key arguments
     fn default() -> Self {
+// Variable declaration
         let mut headers = Vec::new();
+// Variable declaration
         let mut dataset_columns = Vec::new();
         for i in 0..10 {
             headers.push(format!("Col {}", i + 1));
@@ -49,13 +61,16 @@ impl Default for SpreadsheetData {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+/// Enum representing a set of related values in data_editor.rs module
 pub enum FitModel {
     Linear,
     Sigmoid,
     Hill,
 }
 
+/// Implementation block defining methods for this type
 impl FitModel {
+/// Function: explain its purpose and key arguments
     pub fn to_string(&self) -> &'static str {
         match self {
             FitModel::Linear => "Linear (y = ax + b)",
@@ -66,6 +81,7 @@ impl FitModel {
 }
 
 #[derive(Debug, Clone)]
+/// Data structure used in data_editor.rs module
 pub struct FitResult {
     pub model: FitModel,
     pub parameters: Vec<f64>,
@@ -76,6 +92,7 @@ pub struct FitResult {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+/// Enum representing a set of related values in data_editor.rs module
 pub enum MouseAction {
     Select,
     Edit,
@@ -84,6 +101,7 @@ pub enum MouseAction {
 }
 
 #[derive(Debug, Clone)]
+/// Data structure used in data_editor.rs module
 pub struct Selection {
     pub start_row: usize,
     pub start_col: usize,
@@ -91,7 +109,9 @@ pub struct Selection {
     pub end_col: usize,
 }
 
+/// Implementation block defining methods for this type
 impl Selection {
+/// Function: explain its purpose and key arguments
     pub fn new(row: usize, col: usize) -> Self {
         Self {
             start_row: row,
@@ -101,15 +121,21 @@ impl Selection {
         }
     }
 
+/// Function: explain its purpose and key arguments
     pub fn extend_to(&mut self, row: usize, col: usize) {
         self.end_row = row;
         self.end_col = col;
     }
 
+/// Function: explain its purpose and key arguments
     pub fn contains(&self, row: usize, col: usize) -> bool {
+// Variable declaration
         let min_row = self.start_row.min(self.end_row);
+// Variable declaration
         let max_row = self.start_row.max(self.end_row);
+// Variable declaration
         let min_col = self.start_col.min(self.end_col);
+// Variable declaration
         let max_col = self.start_col.max(self.end_col);
         
         row >= min_row && row <= max_row && col >= min_col && col <= max_col
@@ -117,6 +143,7 @@ impl Selection {
 }
 
 #[derive(Debug, Clone)]
+/// Data structure used in data_editor.rs module
 pub struct DataEditor {
     pub show_editor: bool,
     pub spreadsheet_data: SpreadsheetData,
@@ -153,7 +180,9 @@ pub struct DataEditor {
     pub show_paste_dialog: bool,
 }
 
+/// Implementation block defining methods for this type
 impl Default for DataEditor {
+/// Function: explain its purpose and key arguments
     fn default() -> Self {
         Self {
             show_editor: false,
@@ -185,7 +214,9 @@ impl Default for DataEditor {
     }
 }
 
+/// Implementation block defining methods for this type
 impl DataEditor {
+/// Function: explain its purpose and key arguments
     pub fn show_data_editor_window(&mut self, ctx: &egui::Context, datasets: &mut Vec<Dataset>) {
         if !self.show_editor {
             return;
@@ -221,7 +252,9 @@ impl DataEditor {
                     
                     if !datasets.is_empty() {
                         for (i, dataset) in datasets.iter().enumerate() {
+// Variable declaration
                             let is_loaded = self.loaded_datasets.contains(&i);
+// Variable declaration
                             let mut should_load = is_loaded;
                             
                             if ui.checkbox(&mut should_load, &dataset.name).changed() {
@@ -326,6 +359,7 @@ impl DataEditor {
         self.show_fitting_dialog_window(ctx, datasets);
     }
     
+/// Function: explain its purpose and key arguments
     fn show_enhanced_spreadsheet(&mut self, ui: &mut egui::Ui, datasets: &mut Vec<Dataset>) {
         egui::Grid::new("enhanced_data_spreadsheet")
             .num_columns(self.spreadsheet_data.num_cols + 1)
@@ -334,6 +368,7 @@ impl DataEditor {
             .show(ui, |ui| {
                 // Header row with dataset indicators
                 ui.label("Row");
+// Variable declaration
                 let mut header_updates = Vec::new();
                 
                 for (col_idx, header) in self.spreadsheet_data.column_headers.iter().enumerate() {
@@ -353,6 +388,7 @@ impl DataEditor {
                         }
                         
                         // Column header
+// Variable declaration
                         let mut header_text = header.clone();
                         if ui.text_edit_singleline(&mut header_text).changed() {
                             header_updates.push((col_idx, header_text));
@@ -370,9 +406,11 @@ impl DataEditor {
                 // Data rows with enhanced mouse interaction
                 for row in 0..self.spreadsheet_data.num_rows {
                     // Row header
+// Variable declaration
                     let row_selected = self.current_selection.as_ref()
                         .map_or(false, |sel| sel.contains(row, 0));
                     
+// Variable declaration
                     let row_header_response = ui.selectable_label(
                         row_selected,
                         format!("{}", row + 1)
@@ -384,18 +422,23 @@ impl DataEditor {
                     
                     // Data cells with enhanced interaction
                     for col in 0..self.spreadsheet_data.num_cols {
+// Variable declaration
                         let cell_key = (row, col);
+// Variable declaration
                         let mut cell = self.spreadsheet_data.cells
                             .get(&cell_key)
                             .cloned()
                             .unwrap_or_default();
                         
+// Variable declaration
                         let is_selected = self.current_selection.as_ref()
                             .map_or(false, |sel| sel.contains(row, col));
                         
+// Variable declaration
                         let is_editing = self.edit_mode_cell == Some((row, col));
                         
                         // Visual styling for selection
+// Variable declaration
                         let mut response = if is_editing {
                             ui.text_edit_singleline(&mut cell.value)
                         } else if is_selected {
@@ -448,6 +491,7 @@ impl DataEditor {
             });
     }
     
+/// Function: explain its purpose and key arguments
     fn handle_cell_click(&mut self, row: usize, col: usize) {
         match self.mouse_action {
             MouseAction::Select => {
@@ -480,6 +524,7 @@ impl DataEditor {
         }
     }
     
+/// Function: explain its purpose and key arguments
     fn handle_row_header_click(&mut self, row: usize) {
         // Select entire row
         self.current_selection = Some(Selection {
@@ -490,6 +535,7 @@ impl DataEditor {
         });
     }
     
+/// Function: explain its purpose and key arguments
     fn start_drag_selection(&mut self, row: usize, col: usize) {
         self.is_dragging = true;
         if self.current_selection.is_none() {
@@ -497,28 +543,37 @@ impl DataEditor {
         }
     }
     
+/// Function: explain its purpose and key arguments
     fn extend_drag_selection(&mut self, row: usize, col: usize) {
         if let Some(selection) = &mut self.current_selection {
             selection.extend_to(row, col);
         }
     }
     
+/// Function: explain its purpose and key arguments
     fn end_drag_selection(&mut self) {
         self.is_dragging = false;
     }
     
+/// Function: explain its purpose and key arguments
     fn copy_selection(&mut self) {
         if let Some(selection) = &self.current_selection {
+// Variable declaration
             let min_row = selection.start_row.min(selection.end_row);
+// Variable declaration
             let max_row = selection.start_row.max(selection.end_row);
+// Variable declaration
             let min_col = selection.start_col.min(selection.end_col);
+// Variable declaration
             let max_col = selection.start_col.max(selection.end_col);
             
             self.clipboard_data.clear();
             
             for row in min_row..=max_row {
+// Variable declaration
                 let mut row_data = Vec::new();
                 for col in min_col..=max_col {
+// Variable declaration
                     let cell = self.spreadsheet_data.cells.get(&(row, col));
                     row_data.push(cell.map_or(String::new(), |c| c.value.clone()));
                 }
@@ -527,18 +582,24 @@ impl DataEditor {
         }
     }
     
+/// Function: explain its purpose and key arguments
     fn paste_at_selection(&mut self) {
         if let Some(selection) = &self.current_selection {
+// Variable declaration
             let start_row = selection.start_row;
+// Variable declaration
             let start_col = selection.start_col;
             
             for (row_offset, row_data) in self.clipboard_data.iter().enumerate() {
                 for (col_offset, cell_value) in row_data.iter().enumerate() {
+// Variable declaration
                     let target_row = start_row + row_offset;
+// Variable declaration
                     let target_col = start_col + col_offset;
                     
                     if target_row < self.spreadsheet_data.num_rows && 
                        target_col < self.spreadsheet_data.num_cols {
+// Variable declaration
                         let mut cell = DataCell::default();
                         cell.value = cell_value.clone();
                         cell.parsed_value = cell.value.parse::<f64>().ok();
@@ -550,11 +611,16 @@ impl DataEditor {
         }
     }
     
+/// Function: explain its purpose and key arguments
     fn clear_selection(&mut self) {
         if let Some(selection) = &self.current_selection {
+// Variable declaration
             let min_row = selection.start_row.min(selection.end_row);
+// Variable declaration
             let max_row = selection.start_row.max(selection.end_row);
+// Variable declaration
             let min_col = selection.start_col.min(selection.end_col);
+// Variable declaration
             let max_col = selection.start_col.max(selection.end_col);
             
             for row in min_row..=max_row {
@@ -565,9 +631,11 @@ impl DataEditor {
         }
     }
     
+/// Function: explain its purpose and key arguments
     fn load_dataset_to_column(&mut self, datasets: &[Dataset], dataset_idx: usize) {
         if let Some(dataset) = datasets.get(dataset_idx) {
             // Find next available column pair (X, Y)
+// Variable declaration
             let mut target_col = 0;
             while self.column_dataset_mapping.contains_key(&target_col) || 
                   self.column_dataset_mapping.contains_key(&(target_col + 1)) {
@@ -595,12 +663,14 @@ impl DataEditor {
                 }
                 
                 // X value
+// Variable declaration
                 let mut x_cell = DataCell::default();
                 x_cell.value = point[0].to_string();
                 x_cell.parsed_value = Some(point[0]);
                 self.spreadsheet_data.cells.insert((row, target_col), x_cell);
                 
                 // Y value
+// Variable declaration
                 let mut y_cell = DataCell::default();
                 y_cell.value = point[1].to_string();
                 y_cell.parsed_value = Some(point[1]);
@@ -611,8 +681,10 @@ impl DataEditor {
         }
     }
     
+/// Function: explain its purpose and key arguments
     fn unload_dataset_from_columns(&mut self, dataset_idx: usize) {
         // Find and remove columns associated with this dataset
+// Variable declaration
         let mut cols_to_remove = Vec::new();
         for (&col, &mapped_dataset) in &self.column_dataset_mapping {
             if mapped_dataset == dataset_idx {
@@ -632,8 +704,10 @@ impl DataEditor {
         self.loaded_datasets.retain(|&idx| idx != dataset_idx);
     }
     
+/// Function: explain its purpose and key arguments
     fn update_datasets_from_spreadsheet(&mut self, datasets: &mut Vec<Dataset>) {
         // Group columns by dataset
+// Variable declaration
         let mut dataset_columns: HashMap<usize, Vec<usize>> = HashMap::new();
         for (&col, &dataset_idx) in &self.column_dataset_mapping {
             dataset_columns.entry(dataset_idx).or_default().push(col);
@@ -642,13 +716,17 @@ impl DataEditor {
         // Update each dataset
         for (&dataset_idx, cols) in &dataset_columns {
             if let Some(dataset) = datasets.get_mut(dataset_idx) {
+// Variable declaration
                 let mut new_points = Vec::new();
                 
                 // Assume X column comes first, Y second
                 if cols.len() >= 2 {
+// Variable declaration
                     let mut sorted_cols = cols.clone();
                     sorted_cols.sort();
+// Variable declaration
                     let x_col = sorted_cols[0];
+// Variable declaration
                     let y_col = sorted_cols[1];
                     
                     // Collect data from spreadsheet
@@ -669,17 +747,21 @@ impl DataEditor {
         }
     }
     
+/// Function: explain its purpose and key arguments
     fn add_row(&mut self) {
         self.spreadsheet_data.num_rows += 1;
     }
     
+/// Function: explain its purpose and key arguments
     fn add_column(&mut self) {
         self.spreadsheet_data.num_cols += 1;
+// Variable declaration
         let new_col_idx = self.spreadsheet_data.column_headers.len();
         self.spreadsheet_data.column_headers.push(format!("Col {}", new_col_idx + 1));
         self.spreadsheet_data.dataset_columns.push(None);
     }
     
+/// Function: explain its purpose and key arguments
     fn clear_all_data(&mut self) {
         self.spreadsheet_data.cells.clear();
         self.column_dataset_mapping.clear();
@@ -688,26 +770,36 @@ impl DataEditor {
         self.edit_mode_cell = None;
     }
     
+/// Function: explain its purpose and key arguments
     fn parse_pasted_data(&mut self) {
         // Clone the buffer to avoid borrowing conflicts
+// Variable declaration
         let buffer_content = self.paste_buffer.clone();
+// Variable declaration
         let lines: Vec<&str> = buffer_content.lines().collect();
         
+// Variable declaration
         let start_row = self.current_selection.as_ref().map_or(0, |sel| sel.start_row);
+// Variable declaration
         let start_col = self.current_selection.as_ref().map_or(0, |sel| sel.start_col);
         
         // First pass: determine required dimensions
+// Variable declaration
         let mut max_col_needed = 0;
+// Variable declaration
         let mut max_row_needed = 0;
         
         for (row_offset, line) in lines.iter().enumerate() {
+// Variable declaration
             let cells: Vec<&str> = if line.contains('\t') {
                 line.split('\t').collect()
             } else {
                 line.split(',').collect()
             };
             
+// Variable declaration
             let target_row = start_row + row_offset;
+// Variable declaration
             let target_col = start_col + cells.len().saturating_sub(1);
             
             max_row_needed = max_row_needed.max(target_row);
@@ -725,6 +817,7 @@ impl DataEditor {
         
         // Second pass: insert data
         for (row_offset, line) in lines.iter().enumerate() {
+// Variable declaration
             let cells: Vec<&str> = if line.contains('\t') {
                 line.split('\t').collect()
             } else {
@@ -732,9 +825,12 @@ impl DataEditor {
             };
             
             for (col_offset, cell_value) in cells.iter().enumerate() {
+// Variable declaration
                 let target_row = start_row + row_offset;
+// Variable declaration
                 let target_col = start_col + col_offset;
                 
+// Variable declaration
                 let mut cell = DataCell::default();
                 cell.value = cell_value.trim().to_string();
                 cell.parsed_value = cell.value.parse::<f64>().ok();
@@ -745,6 +841,7 @@ impl DataEditor {
         
         self.paste_buffer.clear();
     }
+/// Function: explain its purpose and key arguments
     fn show_transform_dialog_window(&mut self, ctx: &egui::Context, datasets: &mut Vec<Dataset>) {
         if !self.show_transform_dialog {
             return;
@@ -826,11 +923,14 @@ impl DataEditor {
             });
     }
 
+/// Function: explain its purpose and key arguments
     fn create_dataset_from_row(&mut self, datasets: &mut Vec<Dataset>, row: usize) {
+// Variable declaration
         let mut points = Vec::new();
 
         if !self.selected_x_data.is_empty() {
             // Use provided X data and row data as Y values
+// Variable declaration
             let mut y_values = Vec::new();
             for col in 0..self.spreadsheet_data.num_cols {
                 if let Some(cell) = self.spreadsheet_data.cells.get(&(row, col)) {
@@ -859,7 +959,9 @@ impl DataEditor {
         }
 
         if !points.is_empty() {
+// Variable declaration
             let color = get_default_color(datasets.len() % 8);
+// Variable declaration
             let dataset = Dataset {
                 name: self.new_dataset_name.clone(),
                 points,
@@ -872,6 +974,7 @@ impl DataEditor {
         }
     }
 
+/// Function: explain its purpose and key arguments
     fn show_fitting_dialog_window(&mut self, ctx: &egui::Context, datasets: &mut Vec<Dataset>) {
         if !self.show_fitting_dialog {
             return;
@@ -923,6 +1026,7 @@ impl DataEditor {
                             self.fit_results.push(fit_result.clone());
 
                             // Add fitted curve as new dataset
+// Variable declaration
                             let fitted_dataset = Dataset {
                                 name: format!("{}_fitted", dataset.name),
                                 points: fit_result.fitted_points,
@@ -965,6 +1069,7 @@ impl DataEditor {
             });
     }
 
+/// Function: explain its purpose and key arguments
     fn perform_curve_fit(&self, dataset: &Dataset) -> Option<FitResult> {
         if dataset.points.len() < 3 {
             return None; // Need at least 3 points for fitting
@@ -977,33 +1082,51 @@ impl DataEditor {
         }
     }
 
+/// Function: explain its purpose and key arguments
     fn fit_linear(&self, dataset: &Dataset) -> Option<FitResult> {
+// Variable declaration
         let n = dataset.points.len() as f64;
+// Variable declaration
         let sum_x: f64 = dataset.points.iter().map(|p| p[0]).sum();
+// Variable declaration
         let sum_y: f64 = dataset.points.iter().map(|p| p[1]).sum();
+// Variable declaration
         let sum_xy: f64 = dataset.points.iter().map(|p| p[0] * p[1]).sum();
+// Variable declaration
         let sum_x2: f64 = dataset.points.iter().map(|p| p[0] * p[0]).sum();
 
+// Variable declaration
         let slope = (n * sum_xy - sum_x * sum_y) / (n * sum_x2 - sum_x * sum_x);
+// Variable declaration
         let intercept = (sum_y - slope * sum_x) / n;
 
         // Calculate RÂ²
+// Variable declaration
         let y_mean = sum_y / n;
+// Variable declaration
         let ss_tot: f64 = dataset.points.iter().map(|p| (p[1] - y_mean).powi(2)).sum();
+// Variable declaration
         let ss_res: f64 = dataset.points.iter().map(|p| {
+// Variable declaration
             let y_pred = slope * p[0] + intercept;
             (p[1] - y_pred).powi(2)
         }).sum();
 
+// Variable declaration
         let r_squared = 1.0 - (ss_res / ss_tot);
 
         // Generate fitted points
+// Variable declaration
         let x_min = dataset.points.iter().map(|p| p[0]).fold(f64::INFINITY, f64::min);
+// Variable declaration
         let x_max = dataset.points.iter().map(|p| p[0]).fold(f64::NEG_INFINITY, f64::max);
 
+// Variable declaration
         let mut fitted_points = Vec::new();
         for i in 0..100 {
+// Variable declaration
             let x = x_min + (x_max - x_min) * (i as f64 / 99.0);
+// Variable declaration
             let y = slope * x + intercept;
             fitted_points.push([x, y]);
         }
@@ -1018,40 +1141,58 @@ impl DataEditor {
         })
     }
 
+/// Function: explain its purpose and key arguments
     fn fit_sigmoid(&self, dataset: &Dataset) -> Option<FitResult> {
         // Simplified sigmoid fitting using linearization
+// Variable declaration
         let y_min = dataset.points.iter().map(|p| p[1]).fold(f64::INFINITY, f64::min);
+// Variable declaration
         let y_max = dataset.points.iter().map(|p| p[1]).fold(f64::NEG_INFINITY, f64::max);
 
+// Variable declaration
         let a = y_max - y_min;
+// Variable declaration
         let y_offset = y_min;
 
         // Find approximate inflection point
+// Variable declaration
         let x_mid = dataset.points.iter().map(|p| p[0]).sum::<f64>() / dataset.points.len() as f64;
 
         // Rough parameter estimates
+// Variable declaration
         let b = 1.0; // steepness
+// Variable declaration
         let c = x_mid; // inflection point
 
         // Generate fitted points
+// Variable declaration
         let x_min = dataset.points.iter().map(|p| p[0]).fold(f64::INFINITY, f64::min);
+// Variable declaration
         let x_max = dataset.points.iter().map(|p| p[0]).fold(f64::NEG_INFINITY, f64::max);
 
+// Variable declaration
         let mut fitted_points = Vec::new();
         for i in 0..100 {
+// Variable declaration
             let x = x_min + (x_max - x_min) * (i as f64 / 99.0);
+// Variable declaration
             let y = y_offset + a / (1.0 + (-b * (x - c)).exp());
             fitted_points.push([x, y]);
         }
 
         // Calculate RÂ²
+// Variable declaration
         let y_mean = dataset.points.iter().map(|p| p[1]).sum::<f64>() / dataset.points.len() as f64;
+// Variable declaration
         let ss_tot: f64 = dataset.points.iter().map(|p| (p[1] - y_mean).powi(2)).sum();
+// Variable declaration
         let ss_res: f64 = dataset.points.iter().map(|p| {
+// Variable declaration
             let y_pred = y_offset + a / (1.0 + (-b * (p[0] - c)).exp());
             (p[1] - y_pred).powi(2)
         }).sum();
 
+// Variable declaration
         let r_squared = 1.0 - (ss_res / ss_tot);
 
         Some(FitResult {
@@ -1064,39 +1205,54 @@ impl DataEditor {
         })
     }
 
+/// Function: explain its purpose and key arguments
     fn fit_hill(&self, dataset: &Dataset) -> Option<FitResult> {
         // Simplified Hill equation fitting
         // y = (a * x^n) / (k^n + x^n)
 
+// Variable declaration
         let y_max = dataset.points.iter().map(|p| p[1]).fold(f64::NEG_INFINITY, f64::max);
+// Variable declaration
         let a = y_max; // maximum response
 
         // Find approximate K (half-maximal concentration)
+// Variable declaration
         let half_max = a / 2.0;
+// Variable declaration
         let k = dataset.points.iter()
             .min_by(|p1, p2| (p1[1] - half_max).abs().partial_cmp(&(p2[1] - half_max).abs()).unwrap())
             .map(|p| p[0])
             .unwrap_or(1.0);
 
+// Variable declaration
         let n = 2.0; // Hill coefficient (cooperativity)
 
         // Generate fitted points
+// Variable declaration
         let x_min = dataset.points.iter().map(|p| p[0]).fold(f64::INFINITY, f64::min).max(0.001);
+// Variable declaration
         let x_max = dataset.points.iter().map(|p| p[0]).fold(f64::NEG_INFINITY, f64::max);
 
+// Variable declaration
         let mut fitted_points = Vec::new();
         for i in 0..100 {
+// Variable declaration
             let x = x_min + (x_max - x_min) * (i as f64 / 99.0);
             if x > 0.0 {
+// Variable declaration
                 let y = (a * x.powf(n)) / (k.powf(n) + x.powf(n));
                 fitted_points.push([x, y]);
             }
         }
 
         // Calculate RÂ²
+// Variable declaration
         let y_mean = dataset.points.iter().map(|p| p[1]).sum::<f64>() / dataset.points.len() as f64;
+// Variable declaration
         let ss_tot: f64 = dataset.points.iter().map(|p| (p[1] - y_mean).powi(2)).sum();
+// Variable declaration
         let ss_res: f64 = dataset.points.iter().map(|p| {
+// Variable declaration
             let y_pred = if p[0] > 0.0 {
                 (a * p[0].powf(n)) / (k.powf(n) + p[0].powf(n))
             } else {
@@ -1105,6 +1261,7 @@ impl DataEditor {
             (p[1] - y_pred).powi(2)
         }).sum();
 
+// Variable declaration
         let r_squared = 1.0 - (ss_res / ss_tot);
 
         Some(FitResult {

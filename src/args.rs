@@ -1,8 +1,10 @@
+// Import external modules or crates needed in args.rs
 use clap::Parser;
 
 #[derive(Parser)]
 #[command(name = "CactusPlot")]
 #[command(about = "A simple but elegant plotting application")]
+/// Data structure used in args.rs module
 pub struct Args {
     /// Input data files
     #[arg(value_name = "FILE", required = false)]

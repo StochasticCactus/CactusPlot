@@ -1,11 +1,18 @@
+// Import external modules or crates needed in app.rs
 use crate::data_editor::DataEditor;
+// Import external modules or crates needed in app.rs
 use crate::dataset::Dataset;
+// Import external modules or crates needed in app.rs
 use crate::utils::*;
+// Import external modules or crates needed in app.rs
 use eframe::{egui, App, Frame};
+// Import external modules or crates needed in app.rs
 use egui_plot::{HLine, Legend, Line, LineStyle, Plot, PlotPoints, VLine};
+// Import external modules or crates needed in app.rs
 use rand::Rng;
 
 #[derive(PartialEq, Debug, Clone)]
+/// Enum representing a set of related values in app.rs module
 pub enum FontSize {
     Small,
     Medium,
@@ -13,7 +20,9 @@ pub enum FontSize {
     ExtraLarge,
 }
 
+/// Implementation block defining methods for this type
 impl FontSize {
+/// Function: explain its purpose and key arguments
     pub fn to_scale(&self) -> f32 {
         match self {
             FontSize::Small => 0.8,
@@ -23,6 +32,7 @@ impl FontSize {
         }
     }
 
+/// Function: explain its purpose and key arguments
     pub fn to_string(&self) -> &'static str {
         match self {
             FontSize::Small => "Small",
@@ -34,6 +44,7 @@ impl FontSize {
 }
 
 #[derive(Debug, Clone)]
+/// Data structure used in app.rs module
 pub struct SubplotConfig {
     pub show_grid: bool,
     pub show_legend: bool,
@@ -52,7 +63,9 @@ pub struct SubplotConfig {
     pub title: String,
 }
 
+/// Implementation block defining methods for this type
 impl Default for SubplotConfig {
+/// Function: explain its purpose and key arguments
     fn default() -> Self {
         Self {
             show_grid: false,
@@ -75,13 +88,16 @@ impl Default for SubplotConfig {
 }
 
 #[derive(Debug, Clone)]
+/// Data structure used in app.rs module
 pub struct Subplot {
     pub id: String,
     pub datasets: Vec<Dataset>,
     pub config: SubplotConfig,
 }
 
+/// Implementation block defining methods for this type
 impl Subplot {
+/// Function: explain its purpose and key arguments
     pub fn new(id: String) -> Self {
         Self {
             id,
@@ -92,6 +108,7 @@ impl Subplot {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
+/// Enum representing a set of related values in app.rs module
 pub enum SubplotLayout {
     Single,      // 1x1
     Horizontal2, // 1x2
@@ -103,7 +120,9 @@ pub enum SubplotLayout {
     Grid2x3,     // 2x3
 }
 
+/// Implementation block defining methods for this type
 impl SubplotLayout {
+/// Function: explain its purpose and key arguments
     pub fn to_string(&self) -> &'static str {
         match self {
             SubplotLayout::Single => "Single (1x1)",
@@ -117,6 +136,7 @@ impl SubplotLayout {
         }
     }
 
+/// Function: explain its purpose and key arguments
     pub fn dimensions(&self) -> (usize, usize) {
         match self {
             SubplotLayout::Single => (1, 1),
@@ -130,12 +150,15 @@ impl SubplotLayout {
         }
     }
 
+/// Function: explain its purpose and key arguments
     pub fn subplot_count(&self) -> usize {
+// Variable declaration
         let (rows, cols) = self.dimensions();
         rows * cols
     }
 }
 
+/// Data structure used in app.rs module
 pub struct PlotterApp {
     // Subplot system
     pub subplots: Vec<Subplot>,
@@ -163,8 +186,11 @@ pub struct PlotterApp {
     pub data_editor: DataEditor,
 }
 
+/// Implementation block defining methods for this type
 impl Default for PlotterApp {
+/// Function: explain its purpose and key arguments
     fn default() -> Self {
+// Variable declaration
         let mut app = Self {
             subplots: Vec::new(),
             subplot_layout: SubplotLayout::Single,
@@ -191,8 +217,11 @@ impl Default for PlotterApp {
     }
 }
 
+/// Implementation block defining methods for this type
 impl PlotterApp {
+/// Function: explain its purpose and key arguments
     fn ensure_subplots_match_layout(&mut self) {
+// Variable declaration
         let required_count = self.subplot_layout.subplot_count();
 
         // Remove excess subplots
@@ -202,6 +231,7 @@ impl PlotterApp {
 
         // Add missing subplots
         while self.subplots.len() < required_count {
+// Variable declaration
             let id = format!("subplot_{}", self.subplots.len());
             self.subplots.push(Subplot::new(id));
         }
@@ -212,16 +242,20 @@ impl PlotterApp {
         }
     }
 
+/// Function: explain its purpose and key arguments
     pub fn get_active_subplot_mut(&mut self) -> Option<&mut Subplot> {
         self.subplots.get_mut(self.active_subplot)
     }
 
+/// Function: explain its purpose and key arguments
     pub fn get_active_subplot(&self) -> Option<&Subplot> {
         self.subplots.get(self.active_subplot)
     }
 }
 
+/// Implementation block defining methods for this type
 impl App for PlotterApp {
+/// Function: explain its purpose and key arguments
     fn update(&mut self, ctx: &egui::Context, _frame: &mut Frame) {
         if self.dark_mode {
             ctx.set_visuals(egui::Visuals::dark())
@@ -234,13 +268,17 @@ impl App for PlotterApp {
             ui.horizontal(|ui| {
                 if ui.button("Open File(s)").clicked() {
                     if let Some(paths) = pick_multiple_files() {
+// Variable declaration
                         let mut successful_loads = 0;
+// Variable declaration
                         let mut failed_files = Vec::new();
 
                         for path in paths {
+// Variable declaration
                             let load_result = match path.extension().and_then(|ext| ext.to_str()) {
                                 Some("csv") => match load_csv_points(&path) {
                                     Ok(points) => {
+// Variable declaration
                                         let file_name = path
                                             .file_stem()
                                             .and_then(|stem| stem.to_str())
@@ -256,6 +294,7 @@ impl App for PlotterApp {
                                 },
                                 Some("xvg") => match load_xvg_points(&path) {
                                     Ok(points) => {
+// Variable declaration
                                         let file_name = path
                                             .file_stem()
                                             .and_then(|stem| stem.to_str())
@@ -277,6 +316,7 @@ impl App for PlotterApp {
                             };
 
                             if let Some((points, file_name)) = load_result {
+// Variable declaration
                                 let color = get_default_color(
                                     self.get_active_subplot().map_or(0, |s| s.datasets.len()) % 8,
                                 );
@@ -303,6 +343,7 @@ impl App for PlotterApp {
                                 failed_files.len()
                             ));
                         } else if !failed_files.is_empty() {
+// Variable declaration
                             let error_summary = failed_files
                                 .iter()
                                 .take(3) // Show only first 3 errors to avoid cluttering
@@ -316,6 +357,7 @@ impl App for PlotterApp {
                                 .collect::<Vec<_>>()
                                 .join("; ");
 
+// Variable declaration
                             let additional = if failed_files.len() > 3 {
                                 format!(" (and {} more)", failed_files.len() - 3)
                             } else {
@@ -397,13 +439,16 @@ impl App for PlotterApp {
 
                 ui.horizontal(|ui| {
                     ui.label("Dark Mode:");
+// Variable declaration
                     let switch_size = egui::vec2(40.0, 20.0);
+// Variable declaration
                     let (rect, response) =
                         ui.allocate_exact_size(switch_size, egui::Sense::click());
                     if response.clicked() {
                         self.dark_mode = !self.dark_mode;
                     }
 
+// Variable declaration
                     let bg_color = if self.dark_mode {
                         egui::Color32::from_rgb(0, 120, 215)
                     } else {
@@ -413,7 +458,9 @@ impl App for PlotterApp {
                     ui.painter()
                         .rect_filled(rect, switch_size.y * 0.5, bg_color);
 
+// Variable declaration
                     let handle_radius = switch_size.y * 0.4;
+// Variable declaration
                     let handle_center = if self.dark_mode {
                         egui::pos2(rect.max.x - handle_radius * 1.2, rect.center().y)
                     } else {
@@ -426,16 +473,23 @@ impl App for PlotterApp {
 
                 ui.separator();
                 if ui.button("Add random").clicked() {
+// Variable declaration
                     let mut rng = rand::rng();
+// Variable declaration
                     let mut pts = Vec::new();
+// Variable declaration
                     let n = 120usize;
                     for i in 0..n {
+// Variable declaration
                         let x = i as f64 / n as f64 * 10.0;
+// Variable declaration
                         let y = rng.random_range(-2.0..2.0);
                         pts.push([x, y]);
                     }
+// Variable declaration
                     let name = format!("random{}", self.next_name_index);
                     self.next_name_index += 1;
+// Variable declaration
                     let color = get_default_color(
                         self.get_active_subplot().map_or(0, |s| s.datasets.len()) % 8,
                     );
@@ -526,6 +580,7 @@ impl App for PlotterApp {
         // Data editor window
         if self.data_editor.show_editor {
             if let Some(subplot) = self.get_active_subplot() {
+// Variable declaration
                 let mut datasets = subplot.datasets.clone();
                 self.data_editor.show_data_editor_window(ctx, &mut datasets);
 
@@ -543,6 +598,7 @@ impl App for PlotterApp {
             ui.heading("Multi-plot area – pan with mouse, zoom with scroll");
             ui.add_space(6.0);
 
+// Variable declaration
             let (rows, cols) = self.subplot_layout.dimensions();
 
             // Create subplot grid
@@ -552,8 +608,10 @@ impl App for PlotterApp {
                 .show(ui, |ui| {
                     for row in 0..rows {
                         for col in 0..cols {
+// Variable declaration
                             let subplot_index = row * cols + col;
                             if subplot_index < self.subplots.len() {
+// Variable declaration
                                 let is_active = subplot_index == self.active_subplot;
                                 self.render_subplot(ui, subplot_index, is_active);
                             }
@@ -565,9 +623,12 @@ impl App for PlotterApp {
     }
 }
 
+/// Implementation block defining methods for this type
 impl PlotterApp {
+/// Function: explain its purpose and key arguments
     fn render_subplot(&mut self, ui: &mut egui::Ui, subplot_index: usize, is_active: bool) {
         // Get subplot data first to avoid borrowing conflicts
+// Variable declaration
         let subplot_title = if let Some(subplot) = self.subplots.get(subplot_index) {
             if !subplot.config.title.is_empty() {
                 format!("Subplot {}: {}", subplot_index + 1, subplot.config.title)
@@ -578,6 +639,7 @@ impl PlotterApp {
             return;
         };
 
+// Variable declaration
         let subplot_datasets: Vec<(String, [u8; 3])> =
             if let Some(subplot) = self.subplots.get(subplot_index) {
                 subplot
@@ -607,11 +669,14 @@ impl PlotterApp {
                     ui.set_width(150.0);
                     ui.label("Datasets:");
 
+// Variable declaration
                     let mut remove_index: Option<usize> = None;
                     for (i, (name, color)) in subplot_datasets.iter().enumerate() {
                         ui.horizontal(|ui| {
                             // Clickable color square
+// Variable declaration
                             let color_size = egui::vec2(12.0, 12.0);
+// Variable declaration
                             let egui_color = egui::Color32::from_rgb(color[0], color[1], color[2]);
 
                             if ui
@@ -644,6 +709,7 @@ impl PlotterApp {
 
                 // Plot area
                 ui.vertical(|ui| {
+// Variable declaration
                     let plot_width = match self.subplot_layout {
                         SubplotLayout::Single => 800.0,
                         SubplotLayout::Horizontal2 | SubplotLayout::Vertical2 => 400.0,
@@ -652,6 +718,7 @@ impl PlotterApp {
                         SubplotLayout::Grid3x2 | SubplotLayout::Grid2x3 => 200.0,
                     };
 
+// Variable declaration
                     let plot_height = match self.subplot_layout {
                         SubplotLayout::Single => 400.0,
                         SubplotLayout::Horizontal2 | SubplotLayout::Vertical2 => 300.0,
@@ -661,6 +728,7 @@ impl PlotterApp {
                     };
 
                     if let Some(subplot) = self.subplots.get(subplot_index) {
+// Variable declaration
                         let mut plot = Plot::new(&format!("plot_{}", subplot_index))
                             .height(plot_height)
                             .width(plot_width)
@@ -677,10 +745,14 @@ impl PlotterApp {
                                     subplot.config.custom_y_min.parse::<f64>(),
                                     subplot.config.custom_y_max.parse::<f64>(),
                                 ) {
+// Variable declaration
                                     let x_range = max_x - min_x;
+// Variable declaration
                                     let y_range = max_y - min_y;
+// Variable declaration
                                     let x_padding =
                                         x_range * (subplot.config.x_padding_percent / 100.0);
+// Variable declaration
                                     let y_padding =
                                         y_range * (subplot.config.y_padding_percent / 100.0);
 
@@ -698,12 +770,16 @@ impl PlotterApp {
                                     get_data_bounds(&subplot.datasets)
                                 {
                                     // Add some padding (5% by default)
+// Variable declaration
                                     let x_range = max_x - min_x;
+// Variable declaration
                                     let y_range = max_y - min_y;
 
                                     // Handle case where range is zero (single point or constant values)
+// Variable declaration
                                     let x_padding =
                                         if x_range > 0.0 { x_range * 0.05 } else { 1.0 };
+// Variable declaration
                                     let y_padding =
                                         if y_range > 0.0 { y_range * 0.05 } else { 1.0 };
 
@@ -722,8 +798,10 @@ impl PlotterApp {
 
                         plot.show(ui, |plot_ui| {
                             for ds in &subplot.datasets {
+// Variable declaration
                                 let color =
                                     egui::Color32::from_rgb(ds.color[0], ds.color[1], ds.color[2]);
+// Variable declaration
                                 let line = Line::new(PlotPoints::new(ds.points.clone()))
                                     .name(&ds.name)
                                     .color(color);
@@ -736,6 +814,7 @@ impl PlotterApp {
         });
     }
 
+/// Function: explain its purpose and key arguments
     fn show_control_windows(&mut self, ctx: &egui::Context) {
         // Axis controls window
         if self.show_axis_controls {
@@ -853,12 +932,14 @@ impl PlotterApp {
         }
     }
 
+/// Function: explain its purpose and key arguments
     fn show_data_manipulation_window(&mut self, ctx: &egui::Context) {
         egui::Window::new("Data Processing")
             .resizable(true)
             .default_width(350.0)
             .default_height(250.0)
             .show(ctx, |ui| {
+// Variable declaration
                 let subplot_info = if let Some(subplot) = self.get_active_subplot() {
                     if subplot.datasets.is_empty() {
                         ui.label(
@@ -866,6 +947,7 @@ impl PlotterApp {
                         );
                         return;
                     }
+// Variable declaration
                     let dataset_names: Vec<String> =
                         subplot.datasets.iter().map(|d| d.name.clone()).collect();
                     Some((dataset_names, subplot.datasets.len()))
@@ -874,6 +956,7 @@ impl PlotterApp {
                     return;
                 };
 
+// Variable declaration
                 let (dataset_names, dataset_count) = subplot_info.unwrap();
 
                 ui.heading("Rolling Average");
@@ -917,6 +1000,7 @@ impl PlotterApp {
                         ui.label(format!("Original dataset: {} points", dataset.points.len()));
 
                         if dataset.points.len() >= self.rolling_window_size {
+// Variable declaration
                             let result_points = dataset.points.len() - self.rolling_window_size + 1;
                             ui.label(format!(
                                 "Rolling average will have: {} points",
@@ -945,10 +1029,12 @@ impl PlotterApp {
                                     self.rolling_window_size,
                                 ) {
                                     Ok(rolling_avg_points) => {
+// Variable declaration
                                         let new_name = format!(
                                             "{}_rolling_avg_{}",
                                             source_dataset.name, self.rolling_window_size
                                         );
+// Variable declaration
                                         let new_dataset = Dataset {
                                             name: new_name,
                                             points: rolling_avg_points,
@@ -984,6 +1070,7 @@ impl PlotterApp {
             });
     }
 
+/// Function: explain its purpose and key arguments
     fn show_color_picker_window(&mut self, ctx: &egui::Context) {
         egui::Window::new("Dataset Colors")
             .resizable(true)
@@ -991,6 +1078,7 @@ impl PlotterApp {
             .default_height(400.0)
             .show(ctx, |ui| {
                 // Get subplot info first to avoid borrowing conflicts
+// Variable declaration
                 let subplot_info = if let Some(subplot) = self.get_active_subplot() {
                     if subplot.datasets.is_empty() {
                         ui.label(
@@ -998,6 +1086,7 @@ impl PlotterApp {
                         );
                         return;
                     }
+// Variable declaration
                     let dataset_info: Vec<(String, [u8; 3])> = subplot
                         .datasets
                         .iter()
@@ -1009,8 +1098,11 @@ impl PlotterApp {
                     return;
                 };
 
+// Variable declaration
                 let dataset_info = subplot_info.unwrap();
+// Variable declaration
                 let mut selected_color_changed = None;
+// Variable declaration
                 let mut reset_colors = false;
 
                 ui.heading("Dataset Colors (Active Subplot)");
@@ -1019,7 +1111,9 @@ impl PlotterApp {
                 for (i, (name, color)) in dataset_info.iter().enumerate() {
                     ui.horizontal(|ui| {
                         // Color square button
+// Variable declaration
                         let color_button_size = egui::vec2(30.0, 20.0);
+// Variable declaration
                         let egui_color = egui::Color32::from_rgb(color[0], color[1], color[2]);
 
                         if ui
@@ -1039,6 +1133,7 @@ impl PlotterApp {
                     // Color picker for selected dataset
                     if i == self.selected_dataset_for_color {
                         ui.indent("color_picker", |ui| {
+// Variable declaration
                             let mut egui_color =
                                 egui::Color32::from_rgb(color[0], color[1], color[2]);
                             if ui.color_edit_button_srgba(&mut egui_color).changed() {
@@ -1076,6 +1171,7 @@ impl PlotterApp {
             });
     }
 
+/// Function: explain its purpose and key arguments
     fn show_legend_controls_window(&mut self, ctx: &egui::Context) {
         egui::Window::new("Legend & Font Controls")
             .resizable(true)
@@ -1124,6 +1220,7 @@ impl PlotterApp {
                         for (i, dataset) in subplot.datasets.iter_mut().enumerate() {
                             ui.horizontal(|ui| {
                                 // Color indicator
+// Variable declaration
                                 let color = egui::Color32::from_rgb(
                                     dataset.color[0],
                                     dataset.color[1],
