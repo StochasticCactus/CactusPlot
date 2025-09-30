@@ -69,7 +69,7 @@ Clone the repo:
 
 ```bash
 git clone git@github.com:StochasticCactus/CactusPlot.git
-cd YOUR_REPO
+cd CactusPlot
 ```
 
 Build and run:
