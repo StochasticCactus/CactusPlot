@@ -2,7 +2,7 @@ use crate::data_editor::DataEditor;
 use crate::dataset::Dataset;
 use crate::utils::*;
 use eframe::{egui, App, Frame};
-use egui_plot::{Legend, Line, Plot, PlotPoints};
+use egui_plot::{HLine, Legend, Line, LineStyle, Plot, PlotPoints, VLine};
 use rand::Rng;
 
 #[derive(PartialEq, Debug, Clone)]
@@ -233,92 +233,102 @@ impl App for PlotterApp {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
                 if ui.button("Open File(s)").clicked() {
-    if let Some(paths) = pick_multiple_files() {
-        let mut successful_loads = 0;
-        let mut failed_files = Vec::new();
-        
-        for path in paths {
-            let load_result = match path.extension().and_then(|ext| ext.to_str()) {
-                Some("csv") => {
-                    match load_csv_points(&path) {
-                        Ok(points) => {
-                            let file_name = path.file_stem()
-                                .and_then(|stem| stem.to_str())
-                                .unwrap_or("unknown")
-                                .to_string();
-                            Some((points, file_name))
-                        },
-                        Err(e) => {
-                            failed_files.push((path.clone(), format!("CSV error: {}", e)));
-                            None
+                    if let Some(paths) = pick_multiple_files() {
+                        let mut successful_loads = 0;
+                        let mut failed_files = Vec::new();
+
+                        for path in paths {
+                            let load_result = match path.extension().and_then(|ext| ext.to_str()) {
+                                Some("csv") => match load_csv_points(&path) {
+                                    Ok(points) => {
+                                        let file_name = path
+                                            .file_stem()
+                                            .and_then(|stem| stem.to_str())
+                                            .unwrap_or("unknown")
+                                            .to_string();
+                                        Some((points, file_name))
+                                    }
+                                    Err(e) => {
+                                        failed_files
+                                            .push((path.clone(), format!("CSV error: {}", e)));
+                                        None
+                                    }
+                                },
+                                Some("xvg") => match load_xvg_points(&path) {
+                                    Ok(points) => {
+                                        let file_name = path
+                                            .file_stem()
+                                            .and_then(|stem| stem.to_str())
+                                            .unwrap_or("unknown")
+                                            .to_string();
+                                        Some((points, file_name))
+                                    }
+                                    Err(e) => {
+                                        failed_files
+                                            .push((path.clone(), format!("XVG error: {}", e)));
+                                        None
+                                    }
+                                },
+                                _ => {
+                                    failed_files
+                                        .push((path.clone(), "Unsupported file type".to_string()));
+                                    None
+                                }
+                            };
+
+                            if let Some((points, file_name)) = load_result {
+                                let color = get_default_color(
+                                    self.get_active_subplot().map_or(0, |s| s.datasets.len()) % 8,
+                                );
+
+                                if let Some(subplot) = self.get_active_subplot_mut() {
+                                    subplot.datasets.push(Dataset {
+                                        name: file_name,
+                                        points,
+                                        color,
+                                    });
+                                }
+                                successful_loads += 1;
+                            }
+                        }
+
+                        // Update error message based on results
+                        if successful_loads > 0 && failed_files.is_empty() {
+                            self.error_message =
+                                Some(format!("Successfully loaded {} files", successful_loads));
+                        } else if successful_loads > 0 && !failed_files.is_empty() {
+                            self.error_message = Some(format!(
+                                "Loaded {} files successfully, {} failed",
+                                successful_loads,
+                                failed_files.len()
+                            ));
+                        } else if !failed_files.is_empty() {
+                            let error_summary = failed_files
+                                .iter()
+                                .take(3) // Show only first 3 errors to avoid cluttering
+                                .map(|(path, err)| {
+                                    format!(
+                                        "{}: {}",
+                                        path.file_name().unwrap_or_default().to_string_lossy(),
+                                        err
+                                    )
+                                })
+                                .collect::<Vec<_>>()
+                                .join("; ");
+
+                            let additional = if failed_files.len() > 3 {
+                                format!(" (and {} more)", failed_files.len() - 3)
+                            } else {
+                                String::new()
+                            };
+
+                            self.error_message = Some(format!(
+                                "Failed to load files: {}{}",
+                                error_summary, additional
+                            ));
                         }
                     }
-                },
-                Some("xvg") => {
-                    match load_xvg_points(&path) {
-                        Ok(points) => {
-                            let file_name = path.file_stem()
-                                .and_then(|stem| stem.to_str())
-                                .unwrap_or("unknown")
-                                .to_string();
-                            Some((points, file_name))
-                        },
-                        Err(e) => {
-                            failed_files.push((path.clone(), format!("XVG error: {}", e)));
-                            None
-                        }
-                    }
-                },
-                _ => {
-                    failed_files.push((path.clone(), "Unsupported file type".to_string()));
-                    None
                 }
-            };
-            
-            if let Some((points, file_name)) = load_result {
-                let color = get_default_color(
-                    self.get_active_subplot().map_or(0, |s| s.datasets.len()) % 8
-                );
-                
-                if let Some(subplot) = self.get_active_subplot_mut() {
-                    subplot.datasets.push(Dataset {
-                        name: file_name,
-                        points,
-                        color,
-                    });
-                }
-                successful_loads += 1;
-            }
-        }
-        
-        // Update error message based on results
-        if successful_loads > 0 && failed_files.is_empty() {
-            self.error_message = Some(format!("Successfully loaded {} files", successful_loads));
-        } else if successful_loads > 0 && !failed_files.is_empty() {
-            self.error_message = Some(format!(
-                "Loaded {} files successfully, {} failed", 
-                successful_loads, 
-                failed_files.len()
-            ));
-        } else if !failed_files.is_empty() {
-            let error_summary = failed_files.iter()
-                .take(3) // Show only first 3 errors to avoid cluttering
-                .map(|(path, err)| format!("{}: {}", 
-                    path.file_name().unwrap_or_default().to_string_lossy(), 
-                    err))
-                .collect::<Vec<_>>()
-                .join("; ");
-            
-            let additional = if failed_files.len() > 3 {
-                format!(" (and {} more)", failed_files.len() - 3)
-            } else {
-                String::new()
-            };
-            
-            self.error_message = Some(format!("Failed to load files: {}{}", error_summary, additional));
-        }
-    }
-}
 
                 if ui.button("Export Plot as PNG").clicked() {
                     match export_subplots_as_png(
@@ -725,6 +735,7 @@ impl PlotterApp {
             });
         });
     }
+
     fn show_control_windows(&mut self, ctx: &egui::Context) {
         // Axis controls window
         if self.show_axis_controls {
