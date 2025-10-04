@@ -1,3 +1,4 @@
+````markdown
 # CactusPlot 
 
 ## 📖 About
@@ -72,7 +73,7 @@ Clone the repo:
 ```bash
 git clone git@github.com:StochasticCactus/CactusPlot.git
 cd CactusPlot
-```
+````
 
 Build and run:
 
@@ -81,6 +82,103 @@ cargo run -- [options]
 ```
 
 *(See `args.rs` for supported CLI arguments.)*
+
+---
+
+## 💻 Installation Guide
+
+### macOS & Linux
+
+#### 1. Install Rust
+
+On macOS (with Homebrew):
+
+```bash
+brew install rustup
+rustup-init
+```
+
+On Linux (Debian/Ubuntu):
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+Then restart your terminal and check:
+
+```bash
+rustc --version
+cargo --version
+```
+
+#### 2. Build and install
+
+```bash
+cargo build --release
+cargo install --path .
+```
+
+This places the binary in `~/.cargo/bin/`.
+Ensure that directory is in your `PATH` so you can run:
+
+```bash
+cactusplot --help
+```
+
+#### 3. Update
+
+```bash
+git pull
+cargo install --path . --force
+```
+
+---
+
+### Windows
+
+#### 1. Install Rust
+
+Download and run the official installer:
+👉 [https://rustup.rs/](https://rustup.rs/)
+
+During installation, choose **"Default installation"**.
+Once finished, restart your terminal (PowerShell or Command Prompt) and check:
+
+```powershell
+rustc --version
+cargo --version
+```
+
+#### 2. Build and install
+
+Inside the cloned project folder:
+
+```powershell
+cargo build --release
+cargo install --path .
+```
+
+The binary will be placed in:
+
+```
+%USERPROFILE%\.cargo\bin\
+```
+
+Make sure this folder is in your **PATH**.
+You can then run:
+
+```powershell
+cactusplot --help
+```
+
+#### 3. Update
+
+To update later:
+
+```powershell
+git pull
+cargo install --path . --force
+```
 
 ---
 
@@ -94,5 +192,4 @@ You are free to use, modify, and distribute it as long as you include the origin
 
 Huge thanks in advance to anyone who wants to help improve this project.
 What started as a quick hack has the potential to grow into something actually useful — with your help!
-
 
