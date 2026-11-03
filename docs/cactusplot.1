@@ -1,0 +1,71 @@
+.TH CACTUSPLOT 1 "November 2026" "CactusPlot 0.9.0" "User Commands"
+.SH NAME
+cactusplot, cactusbat \- scientific 2D plotting, compatible with Grace/xmgrace
+.SH SYNOPSIS
+.B cactusplot
+[\fIoptions\fR] [\fIproject.cplot\fR|\fIproject.agr\fR|\fIdata files\fR...]
+.br
+.B cactusbat
+[\fIoptions\fR] [\fIfiles\fR...]
+.SH DESCRIPTION
+CactusPlot draws publication-quality 2D plots. It reads and writes Grace projects (.agr) and its
+native .cplot format, executes the Grace command language and accepts the gracebat command line.
+.B cactusbat
+(or
+.B cactusplot -hardcopy
+) runs without a graphical interface and prints the plot to a file; no display is required.
+.SH OPTIONS
+Options are processed in the order given, as in Grace.
+.TP
+.BI \-nxy " file"
+Read X Y1 Y2 ... data; one set per Y column.
+.TP
+.BI \-block " file" "\fR, \fP\-bxy " cols
+Read block data and form a set from columns such as 0:2:3.
+.TP
+.BI \-settype " type"
+Set type of the next data file (xy, xydy, xydxdy, bar, xyhilo, xyboxplot, xycolor, ...).
+.TP
+.BI \-batch " file" "\fR, \fP\-param " file "\fR, \fP\-pexec " command
+Execute command files or a command string.
+.TP
+.B \-hardcopy
+Do not start the interface; print and exit.
+.TP
+.BI \-hdevice " device" "\fR, \fP\-printfile " file
+Output device (pdf, svg, eps, ps, png, jpeg, tiff, bmp, ppm) and file.
+.TP
+.BI "\-o, \-\-export" " file"
+Export to file (format from the extension) and exit.
+.TP
+.BI \-\-style " name"
+Style preset: Modern, Publication, Presentation, Dark, Minimal, "Journal (single column)", "Grace Classic".
+.TP
+.BI \-\-palette " name"
+Recolour the sets from a palette (see \-\-list\-palettes).
+.TP
+.BI \-\-dpi " n" "\fR, \fP\-\-transparent\fR, \fP\-\-tight"
+Raster resolution, transparent background, tight EPS bounding box.
+.TP
+.B \-graph \fIn\fR, \-graphtype \fItype\fR, \-world \fIx0 y0 x1 y1\fR, \-viewport \fIx0 y0 x1 y1\fR, \-log x|y|xy, \-autoscale x|y|xy|none
+Graph selection and setup.
+.TP
+.B \-saveall \fIfile\fR, \-results \fIfile\fR, \-nosafe, \-noprint, \-pipe, \-npipe \fIfile\fR, \-rvideo, \-timestamp, \-seed \fIn\fR, \-wd \fIdir\fR
+As in Grace.
+.TP
+.B \-version, \-help
+Show the version or the option summary.
+.SH EXAMPLES
+.nf
+cactusbat \-nxy data.dat \-hdevice PDF \-printfile figure.pdf
+cactusplot old.agr \-\-style Publication \-o figure.eps \-\-tight
+cactusbat \-batch figure.par \-nosafe
+.fi
+.SH FILES
+.I ~/.config/CactusPlot/CactusPlot.conf
+\- preferences.
+.SH SEE ALSO
+.BR xmgrace (1),
+.BR gracebat (1)
+.SH LICENSE
+GNU General Public License, version 2 or (at your option) any later version.

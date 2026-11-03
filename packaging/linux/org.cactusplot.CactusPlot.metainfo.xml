@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.cactusplot.CactusPlot</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-2.0-or-later</project_license>
+  <name>CactusPlot</name>
+  <summary>Beautiful 2D scientific plotting, compatible with Grace</summary>
+  <description>
+    <p>CactusPlot is a fast, lightweight plotting application for scientists and engineers. It reads and
+    writes Grace/xmgrace projects, understands the Grace command language and gracebat command line, and
+    produces publication-quality figures with a modern default look.</p>
+    <ul>
+      <li>All Grace set and graph types: XY, error bars, bars, hi-lo, box plots, vector maps, polar, pie, Smith charts</li>
+      <li>Curve fitting, regression, FFT, histograms, interpolation, running statistics and more</li>
+      <li>About 1800 named colours, 50 palettes and 150 perceptual colormaps</li>
+      <li>Export to PDF, SVG, EPS, PNG and other formats</li>
+      <li>Undo/redo, live property editing, light and dark themes</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">org.cactusplot.CactusPlot.desktop</launchable>
+  <url type="homepage">https://github.com/StochasticCactus/CactusGui</url>
+  <url type="bugtracker">https://github.com/StochasticCactus/CactusGui/issues</url>
+  <developer id="org.cactusplot">
+    <name>CactusPlot contributors</name>
+  </developer>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/StochasticCactus/CactusGui/main/docs/images/screenshot-light.png</image>
+      <caption>Main window</caption>
+    </screenshot>
+  </screenshots>
+  <provides>
+    <binary>cactusplot</binary>
+    <binary>cactusbat</binary>
+    <mediatype>application/x-grace</mediatype>
+  </provides>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="0.9.0" date="2026-11-03">
+      <description><p>First public release.</p></description>
+    </release>
+  </releases>
+</component>

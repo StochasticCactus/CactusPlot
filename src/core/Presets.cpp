@@ -232,6 +232,9 @@ void styleGraph(Graph& g, const QString& preset)
         ax.minorProps.grid = s.minorGrid && a < 2;
         ax.minorProps.gridLine = LineStyle{colors::mix(s.gridColor, s.page, 0.5), 0.6, 1};
         ax.ticklabelText = TextStyle{s.font, s.tickLabelSize, s.ink};
+        ax.ticklabelStagger = 0;
+        ax.ticklabelOffsetAuto = true;
+        ax.labelPlaceAuto = true;
         ax.labelText = TextStyle{s.font, s.labelSize, s.ink};
         ax.format = LabelFormat::General;
         ax.precision = 6;
@@ -259,9 +262,17 @@ void styleSet(DataSet& s, int index, const QString& preset)
     const QVector<QColor> pal = presetPalette(preset);
     const QColor c = pal.isEmpty() ? QColor(Qt::black) : pal[index % pal.size()];
     s.line = LineStyle{c, sp.lineWidth, s.line.style > 0 ? s.line.style : 1};
-    s.symbol.size = sp.symbolSize;
-    s.symbol.fill = FillStyle{c, 1};
-    s.symbol.line = sp.symbolEdgeContrast ? LineStyle{sp.page, 0.7, 1} : LineStyle{c, 1.0, 1};
+    const bool bars = s.type == SetType::BAR || s.type == SetType::BARDY || s.type == SetType::BARDYDY || s.type == SetType::XYBOXPLOT;
+    if (bars) {
+        // bar width is the symbol size: keep it, use a solid fill with a slightly darker edge
+        s.symbol.size = std::max(s.symbol.size, 0.8);
+        s.symbol.fill = FillStyle{c, 1};
+        s.symbol.line = LineStyle{colors::mix(c, QColor(Qt::black), 0.75), 0.6, 1};
+    } else {
+        s.symbol.size = sp.symbolSize;
+        s.symbol.fill = FillStyle{c, 1};
+        s.symbol.line = sp.symbolEdgeContrast ? LineStyle{sp.page, 0.7, 1} : LineStyle{c, 1.0, 1};
+    }
     s.symbol.charFont = sp.font;
     QColor fc = c;
     fc.setAlpha(sp.fillAlpha);

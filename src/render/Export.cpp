@@ -143,7 +143,6 @@ QByteArray exportToBytes(const Project& p, const Options& o, QString* error)
     buf.open(QIODevice::WriteOnly);
     QImageWriter wr(&buf, fmt == QLatin1String("jpeg") ? QByteArray("jpg") : fmt.toLatin1());
     if (fmt == QLatin1String("jpeg") || fmt == QLatin1String("webp")) wr.setQuality(o.quality);
-    if (fmt == QLatin1String("png")) wr.setCompression(9);
     wr.setText(QStringLiteral("Software"), QStringLiteral(CACTUS_APP_NAME " " CACTUS_VERSION));
     wr.setText(QStringLiteral("Title"), titleOf(p, o));
     if (!wr.write(img)) {

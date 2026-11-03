@@ -1,0 +1,24 @@
+# CactusPlot / Grace batch script: run with
+#   cactusplot -batch examples/damped.par            (interactive)
+#   cactusbat  -batch examples/damped.par -nosafe    (batch, writes damped.pdf)
+s0.x = mesh(0, 12, 400)
+s0.y = exp(-0.25*s0.x) * cos(2*s0.x)
+s1.x = mesh(0, 12, 25)
+s1.y = exp(-0.25*s1.x) * cos(2*s1.x) + rnorm(0, 0.04)
+s1 line type 0
+s1 symbol 1
+s0 legend "$e^{-t/4}\cos 2t$"
+s1 legend "measurement"
+title "Damped oscillator"
+xaxis label "Time $t$ (s)"
+yaxis label "Displacement $x$ (mm)"
+autoscale
+fit formula "y = a0*exp(-a1*x)*cos(a2*x)"
+fit with 3 parameters
+a0 = 1; a1 = 0.2; a2 = 1.9
+nonlfit(s1, 200)
+s2 legend "fit"
+s2 line linestyle 3
+hardcopy device "pdf"
+print to "damped.pdf"
+print

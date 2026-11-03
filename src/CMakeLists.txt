@@ -39,7 +39,8 @@ endif()
 # ------------------------------------------------------------------ application
 set(CACTUS_APP_SOURCES app/main.cpp)
 if(WIN32)
-    list(APPEND CACTUS_APP_SOURCES ${CMAKE_SOURCE_DIR}/packaging/windows/cactusplot.rc)
+    configure_file(${CMAKE_SOURCE_DIR}/packaging/windows/cactusplot.rc.in ${CMAKE_BINARY_DIR}/generated/cactusplot.rc @ONLY)
+    list(APPEND CACTUS_APP_SOURCES ${CMAKE_BINARY_DIR}/generated/cactusplot.rc)
 endif()
 if(APPLE)
     set(MACOSX_BUNDLE_ICON_FILE CactusPlot.icns)
@@ -62,6 +63,19 @@ set_target_properties(cactusplot PROPERTIES
     MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
     MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
     MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/packaging/macos/Info.plist.in")
+if(APPLE)
+    set_target_properties(cactusplot PROPERTIES OUTPUT_NAME CactusPlot)
+endif()
 
 include(GNUInstallDirs)
 install(TARGETS cactusplot RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} BUNDLE DESTINATION .)
+
+# Bundle the Qt libraries next to the program on Windows and macOS (windeployqt/macdeployqt).
+option(CACTUS_DEPLOY_QT "Deploy Qt runtime files when installing (Windows/macOS)" ${WIN32})
+if(APPLE)
+    set(CACTUS_DEPLOY_QT ON CACHE BOOL "" FORCE)
+endif()
+if(CACTUS_DEPLOY_QT AND CACTUS_BUILD_GUI AND COMMAND qt_generate_deploy_app_script)
+    qt_generate_deploy_app_script(TARGET cactusplot OUTPUT_SCRIPT CACTUS_DEPLOY_SCRIPT NO_UNSUPPORTED_PLATFORM_ERROR)
+    install(SCRIPT ${CACTUS_DEPLOY_SCRIPT})
+endif()
