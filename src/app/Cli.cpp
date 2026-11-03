@@ -274,10 +274,10 @@ Outcome process(const QStringList& args)
         }
         if (o == QLatin1String("-free") || o == QLatin1String("-noask") || o == QLatin1String("-mono") ||
             o == QLatin1String("-install") || o == QLatin1String("-noinstall") || o == QLatin1String("-nosigcatch")) continue;
-        if (o == QLatin1String("-graph")) { in.setCurrentGraph(next("n").toInt()); R.project.ensureGraph(in.currentGraph()); continue; }
+        if (o == QLatin1String("-graph")) { in.setCurrentGraph(next("n").toInt()); in.ensureCurrentGraph(); continue; }
         if (o == QLatin1String("-graphtype")) {
             GraphType t;
-            if (parseGraphType(next("type"), &t)) R.project.ensureGraph(in.currentGraph()).type = t;
+            if (parseGraphType(next("type"), &t)) in.ensureCurrentGraph().type = t;
             continue;
         }
         if (o == QLatin1String("-hardcopy")) { hardcopy = true; continue; }
@@ -285,7 +285,7 @@ Outcome process(const QStringList& args)
         if (o == QLatin1String("-legend")) { next("load"); legendLoad = true; continue; }
         if (o == QLatin1String("-log")) {
             const QString v = next("x|y|xy").toLower();
-            Graph& g = R.project.ensureGraph(in.currentGraph());
+            Graph& g = in.ensureCurrentGraph();
             if (v.contains(QLatin1Char('x'))) g.xscale = ScaleType::Log;
             if (v.contains(QLatin1Char('y'))) g.yscale = ScaleType::Log;
             g.autoscale();
@@ -332,7 +332,7 @@ Outcome process(const QStringList& args)
         if (o == QLatin1String("-source")) { pipeSource = next("disk|pipe").toLower() == QLatin1String("pipe"); continue; }
         if (o == QLatin1String("-timestamp")) { R.project.timestamp.active = true; continue; }
         if (o == QLatin1String("-viewport")) {
-            Graph& g = R.project.ensureGraph(in.currentGraph());
+            Graph& g = in.ensureCurrentGraph();
             g.vxmin = next("xmin").toDouble(); g.vymin = next("ymin").toDouble();
             g.vxmax = next("xmax").toDouble(); g.vymax = next("ymax").toDouble();
             continue;
@@ -344,7 +344,7 @@ Outcome process(const QStringList& args)
             continue;
         }
         if (o == QLatin1String("-world")) {
-            Graph& g = R.project.ensureGraph(in.currentGraph());
+            Graph& g = in.ensureCurrentGraph();
             g.wxmin = next("xmin").toDouble(); g.wymin = next("ymin").toDouble();
             g.wxmax = next("xmax").toDouble(); g.wymax = next("ymax").toDouble();
             g.autoticks();

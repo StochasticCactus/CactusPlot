@@ -51,6 +51,8 @@ public:
     bool hasBlockData() const { return !m_block.isEmpty(); }
 
     int currentGraph() const { return m_curGraph; }
+    /// The current graph, created in the project's style (like graph 0) if it does not exist yet.
+    Graph& ensureCurrentGraph() { return graph(); }
     void setCurrentGraph(int g) { m_curGraph = g; }
     int lastCreatedSet() const { return m_lastSet; }
 

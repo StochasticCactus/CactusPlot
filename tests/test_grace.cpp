@@ -240,6 +240,13 @@ private slots:
         QVERIFY(s);
         QCOMPARE(s->type, SetType::XYDY);
         QCOMPARE(s->cols[1], (QVector<double>{3, 7}));
+
+        // restrict keeps x and y of the same points
+        Project r = presets::newProject();
+        Interpreter ir(&r);
+        QVERIFY(ir.execute(QStringLiteral("s0.x = mesh(0, 9, 10); s0.y = s0.x * 10; restrict(s0, s0.x > 5)")));
+        QCOMPARE(r.graphs[0].sets[0].cols[0], (QVector<double>{6, 7, 8, 9}));
+        QCOMPARE(r.graphs[0].sets[0].cols[1], (QVector<double>{60, 70, 80, 90}));
     }
 
     void gromacsXvg()
@@ -299,6 +306,13 @@ private slots:
         QCOMPARE(n.graph(0)->activeSetCount(), 2);
         QCOMPARE(n.graphs[0].sets[1].legend, QStringLiteral("Angle"));
         QCOMPARE(n.graphs[0].sets[1].cols[1], (QVector<double>{7, 8}));
+
+        // a header line names an XYDY set after its Y column
+        Project h = presets::newProject();
+        Interpreter ih(&h);
+        QVERIFY(ih.readDataText(QStringLiteral("# time counts error\n0 98 4\n1 61 3\n"), Interpreter::ReadMode::Single, SetType::XYDY, 0,
+                                QStringLiteral("clipboard")));
+        QCOMPARE(h.graphs[0].sets[0].legend, QStringLiteral("counts"));
 
         QVERIFY(datareader::hasGraceCommands(energy));
         QVERIFY(!datareader::hasGraceCommands(QStringLiteral("# x y\n1 2\n")));

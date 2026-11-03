@@ -2161,10 +2161,9 @@ bool Interpreter::readDataText(const QString& text, ReadMode mode, SetType type,
                 }
             }
             if (t.hasStrings()) s.strings = t.strings;
-            if (s.legend.isEmpty() && t.headers.size() == t.columns()) {
-                if (t.columns() == 2) s.legend = t.headers[1];
-                else if (groups > 1) s.legend = t.headers[1 + grp * (ncols - 1)];
-            }
+            // a header line ("# time counts error") names the set after its Y column
+            if (s.legend.isEmpty() && t.columns() >= 2 && t.headers.size() == t.columns())
+                s.legend = t.headers[1 + grp * (ncols - 1)];
             m_lastSet = si;
             ++created;
         }
@@ -2339,9 +2338,10 @@ bool Interpreter::functionCommand(const QString& name, const QStringList& args)
             const QVector<double> cond = vecArg(1, g, s);
             for (int i = 0; i < d->size(); ++i) keep[i] = cond.value(i, cond.isEmpty() ? 1.0 : cond.last()) != 0.0;
         }
+        const int n = d->size();  // fixed before the columns shrink
         for (int c = 0; c < d->columns(); ++c) {
             QVector<double> nv;
-            for (int i = 0; i < d->size(); ++i) if (keep[i]) nv.push_back(d->cols[c].value(i));
+            for (int i = 0; i < n; ++i) if (keep[i]) nv.push_back(d->cols[c].value(i));
             d->cols[c] = nv;
         }
         if (!d->strings.isEmpty()) {
