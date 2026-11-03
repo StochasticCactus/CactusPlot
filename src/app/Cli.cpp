@@ -306,12 +306,14 @@ Outcome process(const QStringList& args)
         if (o == QLatin1String("-param") || o == QLatin1String("-p")) {
             const QString f = next("file");
             if (!in.runFile(f)) for (const QString& e : in.errors()) err(e);
+            for (const QString& w : in.warnings()) err(QStringLiteral("Warning: ") + w);
             in.clearMessages();
             continue;
         }
         if (o == QLatin1String("-pexec")) {
             in.execute(next("command"));
             for (const QString& e : in.errors()) err(e);
+            for (const QString& w : in.warnings()) err(QStringLiteral("Warning: ") + w);
             in.clearMessages();
             continue;
         }
@@ -440,6 +442,7 @@ Outcome process(const QStringList& args)
     };
     for (const QString& b : batchFiles) {
         if (!in.runFile(b)) for (const QString& e : in.errors()) err(e);
+        for (const QString& w : in.warnings()) err(QStringLiteral("Warning: ") + w);
         in.clearMessages();
         if (R.done) break;
     }

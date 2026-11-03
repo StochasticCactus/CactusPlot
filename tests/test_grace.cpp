@@ -247,6 +247,16 @@ private slots:
         QVERIFY(ir.execute(QStringLiteral("s0.x = mesh(0, 9, 10); s0.y = s0.x * 10; restrict(s0, s0.x > 5)")));
         QCOMPARE(r.graphs[0].sets[0].cols[0], (QVector<double>{6, 7, 8, 9}));
         QCOMPARE(r.graphs[0].sets[0].cols[1], (QVector<double>{60, 70, 80, 90}));
+
+        // "s0" on the right-hand side means the current graph, even when assigning to another graph
+        QVERIFY(ir.execute(QStringLiteral("g1.s0.y = s0.y / 10")));
+        QCOMPARE(r.graph(1)->sets[0].cols[1], (QVector<double>{6, 7, 8, 9}));
+        // define a vector variable
+        QVERIFY(ir.execute(QStringLiteral("define v[5]")));
+        expr::Value len;
+        QString err;
+        QVERIFY(ir.evaluate(QStringLiteral("len(v)"), &len, &err));
+        QCOMPARE(len.scalar(), 5.0);
     }
 
     void gromacsXvg()

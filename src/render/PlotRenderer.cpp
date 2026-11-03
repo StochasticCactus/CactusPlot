@@ -1602,6 +1602,9 @@ void PlotRenderer::drawObject(QPainter* p, int oi, const DrawObject& o)
         }
         return QPointF(q.x() * m_unit, m_proj.page.height - q.y() * m_unit);
     };
+    // world coordinates that cannot be mapped (e.g. x <= 0 on a log axis): skip the object
+    auto finite = [](const QPointF& q) { return std::isfinite(q.x()) && std::isfinite(q.y()); };
+    if (o.kind == DrawObjectKind::Text ? !finite(toPage(o.pos)) : !(finite(toPage(o.p1)) && finite(toPage(o.p2)))) return;
     QPainterPath shape;
     p->save();
     switch (o.kind) {

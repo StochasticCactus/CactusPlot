@@ -554,7 +554,11 @@ bool Interpreter::resolveIdent(const QString& name, expr::Value* out, int graph,
     static const QRegularExpression colRe(QStringLiteral("^(?:(?:g(\\d+)\\.)?s(\\d+|_|\\$)\\.)?(x|y|y1|y2|y3|y4|y0)$"));
     const auto m = colRe.match(name);
     if (m.hasMatch()) {
-        int gi = m.captured(1).isEmpty() ? (graph >= 0 ? graph : m_curGraph) : m.captured(1).toInt();
+        // bare x, y belong to the set being evaluated; "s1.y" without a graph means the current graph
+        int gi;
+        if (!m.captured(1).isEmpty()) gi = m.captured(1).toInt();
+        else if (!m.captured(2).isEmpty()) gi = m_curGraph;
+        else gi = graph >= 0 ? graph : m_curGraph;
         int si;
         if (m.captured(2).isEmpty()) si = set;
         else if (m.captured(2) == QLatin1String("_") || m.captured(2) == QLatin1String("$")) si = m_lastSet;
@@ -1195,7 +1199,12 @@ bool Interpreter::dispatch(Cursor& c)
         ++c.i;
         if (c.acceptPunct("[")) {
             int n = 0;
-            if (!c.isPunct("]")) n = int(number(c));
+            if (c.peek() && c.peek()->type == Tok::Number) {
+                n = c.peek()->text.toInt();
+                ++c.i;
+            } else if (!c.isPunct("]")) {
+                n = int(number(c));
+            }
             c.acceptPunct("]");
             m_vars.setVector(name, QVector<double>(std::max(0, n), 0.0));
         } else {
