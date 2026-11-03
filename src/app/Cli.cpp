@@ -5,6 +5,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QTextStream>
+#include <QUrl>
 #include <cstdio>
 
 #include "Version.h"
@@ -26,8 +27,11 @@ void out(const QString& s)
     if (!s.endsWith(QLatin1Char('\n'))) ts << '\n';
 }
 
+QStringList* g_errors = nullptr;  // collects messages for the GUI while process() runs
+
 void err(const QString& s)
 {
+    if (g_errors) g_errors->push_back(s.trimmed());
     QTextStream ts(stderr);
     ts << s;
     if (!s.endsWith(QLatin1Char('\n'))) ts << '\n';
@@ -127,6 +131,8 @@ bool isHeadless(const QStringList& args)
 Outcome process(const QStringList& args)
 {
     Outcome R;
+    g_errors = &R.errors;
+    struct Reset { ~Reset() { g_errors = nullptr; } } reset;
     const QString program = args.value(0, QStringLiteral(CACTUS_APP_NAME));
     bool hardcopy = isBatchProgram(program);
     bool noprint = false;
@@ -167,14 +173,21 @@ Outcome process(const QStringList& args)
     in.workingDir = QDir::currentPath();
     in.messageHandler = [&](const QString& m) {
         results << m;
-        if (hardcopy && resultsFile.isEmpty()) out(m);
+        // errors are reported once, on standard error, by the caller
+        if (hardcopy && resultsFile.isEmpty() && !m.startsWith(QLatin1String("Error: "))) out(m);
     };
     SetType settype = SetType::XY;
     bool firstData = true;
 
     auto readData = [&](const QString& path, Interpreter::ReadMode mode) {
         QString text, e;
-        const QString full = (path == QLatin1String("-") || QFileInfo(path).isAbsolute()) ? path : QDir(in.workingDir).filePath(path);
+        QString local = path;
+        // file managers may pass "file:///home/me/data.xvg" instead of a path
+        if (local.startsWith(QLatin1String("file:"), Qt::CaseInsensitive)) {
+            const QUrl url(local);
+            if (url.isLocalFile()) local = url.toLocalFile();
+        }
+        const QString full = (local == QLatin1String("-") || QFileInfo(local).isAbsolute()) ? local : QDir(in.workingDir).filePath(local);
         if (!datareader::readFile(full, &text, &e)) {
             err(e);
             R.exitCode = 1;
@@ -194,7 +207,10 @@ Outcome process(const QStringList& args)
             return;
         }
         if (firstData && R.project.graphs.value(0).activeSetCount() == 0) firstData = false;
-        in.readDataText(text, mode, settype, in.currentGraph(), QFileInfo(full).fileName());
+        if (!in.readDataText(text, mode, settype, in.currentGraph(), QFileInfo(full).fileName())) R.exitCode = 1;
+        for (const QString& m : in.errors()) err(m);
+        for (const QString& w : in.warnings()) err(QStringLiteral("Warning: ") + w);
+        in.clearMessages();
         anyData = true;
         if (removeFiles && path != QLatin1String("-")) QFile::remove(full);
     };

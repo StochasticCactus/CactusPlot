@@ -20,6 +20,7 @@ struct Outcome {
     QStringList openInGui;   ///< extra files for the GUI
     QSize fixedCanvas;
     bool barebones = false;
+    QStringList errors;      ///< problems to show the user (e.g. a file that could not be read)
 };
 
 /// Should this invocation run without a GUI? (checked before creating the Qt application)

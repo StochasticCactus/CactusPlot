@@ -60,6 +60,15 @@ text for figures that will be shrunk.
 
 ## Data
 
+**Do I need to say whether my file has error bars?**
+No. As in Grace, the file decides: a GROMACS `@TYPE xydy` line gives error bars, and files without
+one (or with `@TYPE xy`) open as ordinary curves, one per column. The import dialog also suggests
+XYDY for plain three-column files, which you can change.
+
+**A file does not open.**
+CactusPlot shows a message saying why: the file could not be read, or it contains no numbers. If a
+file opens without any message but looks wrong, please report it with the file.
+
 **My file is not read correctly.**
 Open it with **File ▸ Import Data**: the dialog shows how many blocks, rows and columns were found.
 The common causes are:

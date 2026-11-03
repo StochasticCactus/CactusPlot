@@ -2,6 +2,7 @@
 // GUI smoke tests: drive the real widgets with synthetic events.
 #include <QtTest>
 #include <QComboBox>
+#include <QDir>
 #include <QListWidget>
 #include <QPushButton>
 #include <QTemporaryDir>
@@ -147,6 +148,43 @@ private slots:
         QVERIFY(in.open(QIODevice::ReadOnly));
         ImportDialog d(w.document(), path, QString::fromUtf8(in.readAll()));
         QCOMPARE(d.findChildren<QComboBox*>().value(1)->currentIndex(), int(SetType::XYDY));
+    }
+
+    void openWithoutErrorBars()
+    {
+        // files with and without error bars both open, as in Grace: the type follows "@TYPE",
+        // plain files are XY (the import dialog suggests XYDY for three columns)
+        QTemporaryDir dir;
+        struct Case { const char* name; const char* text; SetType type; int sets; };
+        const Case cases[] = {
+            {"rmsd.xvg", "# GROMACS\n@    title \"RMSD\"\n@TYPE xy\n@ subtitle \"Backbone\"\n0 0.1\n1 0.2\n2 0.25\n", SetType::XY, 1},
+            {"plain.xvg", "0 1\n1 2\n2 4\n", SetType::XY, 1},
+            {"gyrate.xvg", "@TYPE xy\n@ s0 legend \"Rg\"\n@ s1 legend \"Rg\\sX\\N\"\n0 1 2\n1 2 3\n", SetType::XY, 2},
+            {"avg.xvg", "@TYPE xydy\n0 1 0.1\n1 2 0.2\n", SetType::XYDY, 1},
+        };
+        for (const Case& c : cases) {
+            const QString path = dir.filePath(QString::fromLatin1(c.name));
+            QFile f(path);
+            QVERIFY(f.open(QIODevice::WriteOnly));
+            f.write(c.text);
+            f.close();
+            MainWindow w;
+            w.setProject(presets::newProject(), QString());
+            QVERIFY2(w.openFile(path), c.name);
+            const Graph& g = w.document()->project().graphs[0];
+            QCOMPARE(g.activeSetCount(), c.sets);
+            QCOMPARE(g.sets[0].type, c.type);
+        }
+        const QStringList texts{QStringLiteral("# t y\n0 1\n1 2\n2 3\n"), QStringLiteral("time,value\n0,1\n1,2\n"),
+                                QStringLiteral("@TYPE xy\n0 1\n1 2\n")};
+        for (const QString& t : texts) {
+            Document doc;
+            doc.setProject(presets::newProject());
+            ImportDialog d(&doc, QStringLiteral("x.dat"), t);
+            QMetaObject::invokeMethod(&d, "accept");
+            QCOMPARE(doc.project().graphs[0].activeSetCount(), 1);
+            QCOMPARE(doc.project().graphs[0].sets[0].type, SetType::XY);
+        }
     }
 
     void inspectorBuilds()

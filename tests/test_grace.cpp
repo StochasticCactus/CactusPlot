@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include <QtTest>
 #include <QTemporaryDir>
+#include <QUrl>
 #include <cmath>
 
 #include "app/Cli.h"
@@ -390,6 +391,20 @@ private slots:
                           QStringLiteral("--export"), png, QStringLiteral("-pexec"), QStringLiteral("s0.x = mesh(1, 5, 5); s0.y = s0.x")});
         QCOMPARE(r.exitCode, 0);
         QVERIFY(QImage(png).width() > 100);
+
+        // file managers may pass file:// URLs; unreadable files are reported, not silently ignored
+        const QString xvg = dir.filePath(QStringLiteral("rmsd.xvg"));
+        QFile fx(xvg);
+        QVERIFY(fx.open(QIODevice::WriteOnly));
+        fx.write("# GROMACS\n@    title \"RMSD\"\n@TYPE xy\n0 0.1\n1 0.2\n2 0.25\n");
+        fx.close();
+        r = cli::process({QStringLiteral("cactusplot"), QUrl::fromLocalFile(xvg).toString()});
+        QVERIFY(r.errors.isEmpty());
+        QCOMPARE(r.project.graph(0)->activeSetCount(), 1);
+        QCOMPARE(r.project.graph(0)->sets[0].type, SetType::XY);
+        r = cli::process({QStringLiteral("cactusplot"), dir.filePath(QStringLiteral("missing.xvg"))});
+        QCOMPARE(r.errors.size(), 1);
+        QVERIFY(r.launchGui);
     }
 
     void colors()

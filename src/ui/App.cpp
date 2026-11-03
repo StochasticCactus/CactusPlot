@@ -2,6 +2,7 @@
 #include "ui/App.h"
 
 #include <QFileOpenEvent>
+#include <QMessageBox>
 #include <QSettings>
 #include <QTimer>
 
@@ -50,6 +51,14 @@ int runGui(QApplication& app, cli::Outcome& outcome)
                                           : QString());
     }
     if (outcome.fixedCanvas.isValid()) w.resize(outcome.fixedCanvas + QSize(600, 200));
+    // files given at start-up (double-click, "Open With") that could not be read: say so, don't just open empty
+    QStringList problems;
+    for (const QString& e : outcome.errors)
+        if (!e.startsWith(QLatin1String("Warning:"))) problems << e;
+    if (!problems.isEmpty() && qEnvironmentVariableIsEmpty("CACTUS_SCREENSHOT"))
+        QTimer::singleShot(300, &w, [&w, problems] {
+            QMessageBox::warning(&w, QObject::tr("Could not open"), problems.mid(0, 10).join(QLatin1Char('\n')));
+        });
     // Documentation/testing aid: CACTUS_SCREENSHOT=file.png saves a screenshot of the window and quits.
     const QString shot = qEnvironmentVariable("CACTUS_SCREENSHOT");
     if (!shot.isEmpty()) {

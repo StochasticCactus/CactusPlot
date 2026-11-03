@@ -635,6 +635,10 @@ bool MainWindow::openFile(const QString& path)
         const QString name = QFileInfo(path).fileName();
         QStringList errs;
         int gi = std::max(0, m_doc->currentGraph());
+        if (datareader::parseText(text).isEmpty()) {
+            QMessageBox::warning(this, tr("Open failed"), tr("%1 contains no numeric data.").arg(name));
+            return false;
+        }
         m_doc->modify(tr("Open %1").arg(name), [&](Project& p) {
             if (!p.graph(gi) || !p.graph(gi)->active) {
                 Graph& g = p.ensureGraph(gi);
