@@ -2,6 +2,9 @@
 #include "ui/Dialogs.h"
 
 #include <QCheckBox>
+#include <QDir>
+#include <QFontDatabase>
+#include <iterator>
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>

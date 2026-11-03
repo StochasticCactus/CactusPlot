@@ -175,7 +175,7 @@ struct Axis {
     bool placeRounded = true;
     TickDirection tickDir = TickDirection::In;
     TickProps majorProps;
-    TickProps minorProps{0.5};
+    TickProps minorProps{0.5, LineStyle(), false, LineStyle{QColor(220, 220, 220), 1.0, 1}};
     SideOp tickSide = SideOp::Both;
     bool tickAuto = true;      ///< false: use special ticks
     QVector<TickMark> specTicks;

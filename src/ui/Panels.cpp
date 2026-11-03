@@ -2,6 +2,8 @@
 #include "ui/Panels.h"
 
 #include <QApplication>
+#include <QSet>
+#include <climits>
 #include <QClipboard>
 #include <QComboBox>
 #include <QContextMenuEvent>

@@ -322,9 +322,7 @@ bool Interpreter::run(const QString& text, const QString& sourceName)
     m_source = sourceName;
     const int errorsBefore = m_errors.size();
     const QStringList lines = text.split(QLatin1Char('\n'));
-    int lineNo = 0;
     for (QString line : lines) {
-        ++lineNo;
         if (line.endsWith(QLatin1Char('\r'))) line.chop(1);
         const QString t = line.trimmed();
         if (t.isEmpty()) continue;

@@ -97,14 +97,6 @@ Spec spec(const QString& name)
     return s;
 }
 
-const QVector<Symbol>& symbolCycle()
-{
-    static const QVector<Symbol> c = {Symbol::Circle, Symbol::Square, Symbol::Diamond, Symbol::TriangleUp,
-                                      Symbol::TriangleDown, Symbol::Pentagon, Symbol::Hexagon, Symbol::Star5,
-                                      Symbol::TriangleLeft, Symbol::TriangleRight};
-    return c;
-}
-
 bool isGrace(const QString& name) { return name.compare(QLatin1String("Grace Classic"), Qt::CaseInsensitive) == 0; }
 
 }  // namespace

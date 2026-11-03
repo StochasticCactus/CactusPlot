@@ -446,7 +446,6 @@ QPainterPath polarSector(const Graph& g, const GraphGeometry& geo)
     path.arcTo(outer, a0, span);
     if (r0 > 0) {
         const QRectF inner(geo.center.x() - r0, geo.center.y() - r0, 2 * r0, 2 * r0);
-        QPointF pt;
         QPainterPath tmp;
         tmp.arcMoveTo(inner, a0 + span);
         path.lineTo(tmp.currentPosition());
