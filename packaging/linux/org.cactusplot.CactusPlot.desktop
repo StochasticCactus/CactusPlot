@@ -1,0 +1,17 @@
+[Desktop Entry]
+Type=Application
+Name=CactusPlot
+GenericName=Scientific Plotting
+GenericName[de]=Wissenschaftliche Diagramme
+GenericName[pt]=Gráficos Científicos
+GenericName[es]=Gráficos científicos
+GenericName[fr]=Graphiques scientifiques
+Comment=Create publication-quality 2D plots; opens Grace/xmgrace projects
+Exec=cactusplot %F
+Icon=org.cactusplot.CactusPlot
+Terminal=false
+Categories=Science;Math;DataVisualization;Education;Qt;
+Keywords=plot;graph;chart;xmgrace;grace;xmgr;fit;data;science;
+MimeType=application/x-cactusplot;application/x-grace;application/x-xvg;text/csv;text/tab-separated-values;
+StartupNotify=true
+StartupWMClass=cactusplot

@@ -1,0 +1,23 @@
+# Flatpak manifest: works on every distribution (Fedora, Mint, Pop!_OS, Arch, ...)
+# Build: flatpak-builder --user --install --force-clean build-dir packaging/flatpak/org.cactusplot.CactusPlot.yml
+app-id: org.cactusplot.CactusPlot
+runtime: org.kde.Platform
+runtime-version: '6.8'
+sdk: org.kde.Sdk
+command: cactusplot
+finish-args:
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  - --filesystem=home
+  - --filesystem=xdg-run/gvfsd
+modules:
+  - name: cactusplot
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DCACTUS_BUILD_TESTS=OFF
+    sources:
+      - type: dir
+        path: ../..

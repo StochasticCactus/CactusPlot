@@ -1,0 +1,24 @@
+# Maintainer: CactusPlot contributors
+pkgname=cactusplot
+pkgver=0.9.0
+pkgrel=1
+pkgdesc="Beautiful 2D scientific plotting, compatible with Grace/xmgrace"
+arch=('x86_64' 'aarch64')
+url="https://github.com/StochasticCactus/CactusGui"
+license=('GPL-2.0-or-later')
+depends=('qt6-base' 'qt6-svg' 'hicolor-icon-theme' 'shared-mime-info' 'desktop-file-utils')
+makedepends=('cmake' 'ninja')
+optdepends=('qt6-imageformats: TIFF and WebP export'
+            'qt6-wayland: native Wayland support')
+provides=('gracebat-compatible')
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+  cmake -S "CactusGui-$pkgver" -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCACTUS_BUILD_TESTS=OFF
+  cmake --build build
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+}

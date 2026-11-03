@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-cactusplot">
+    <comment>CactusPlot project</comment>
+    <glob pattern="*.cplot"/>
+    <magic priority="60"><match type="string" value="# CactusPlot project file" offset="0"/></magic>
+    <sub-class-of type="text/plain"/>
+    <icon name="org.cactusplot.CactusPlot"/>
+  </mime-type>
+  <mime-type type="application/x-grace">
+    <comment>Grace project</comment>
+    <glob pattern="*.agr"/>
+    <glob pattern="*.xvgr"/>
+    <magic priority="50"><match type="string" value="# Grace project file" offset="0"/></magic>
+    <sub-class-of type="text/plain"/>
+  </mime-type>
+  <mime-type type="application/x-xvg">
+    <comment>Grace/GROMACS XY data</comment>
+    <glob pattern="*.xvg"/>
+    <sub-class-of type="text/plain"/>
+  </mime-type>
+</mime-info>

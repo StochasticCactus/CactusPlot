@@ -1,0 +1,182 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
+name: Build and test
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  QT_VERSION: "6.8.3"
+
+jobs:
+  # ---------------------------------------------------------------- Linux, distribution Qt
+  linux:
+    name: Linux (Ubuntu 24.04, system Qt) + deb/rpm
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ninja-build cmake g++ qt6-base-dev qt6-svg-dev \
+            libqt6svg6-dev qt6-base-dev-tools libgl1-mesa-dev rpm
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+      - name: Build
+        run: cmake --build build --parallel
+      - name: Test
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: ctest --test-dir build --output-on-failure
+      - name: Batch-mode smoke test
+        run: |
+          printf '1 1\n2 4\n3 9\n4 16\n' > d.dat
+          env -u DISPLAY ./build/src/cactusplot -hardcopy -hdevice PDF -printfile out.pdf -nxy d.dat
+          test -s out.pdf
+      - name: Packages
+        run: cd build && cpack -G "DEB;RPM"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-packages
+          path: |
+            build/*.deb
+            build/*.rpm
+
+  # ---------------------------------------------------------------- Linux AppImage (any distribution)
+  appimage:
+    name: Linux AppImage
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          modules: qtimageformats
+          cache: true
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ninja-build libgl1-mesa-dev libxkbcommon-x11-0 libxcb-cursor0 \
+            libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 libfuse2 file
+      - name: Build
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+          cmake --build build --parallel
+      - name: Test
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: ctest --test-dir build --output-on-failure
+      - name: Create AppImage
+        run: |
+          DESTDIR=AppDir cmake --install build
+          wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x linuxdeploy*.AppImage
+          PLUGINS=""
+          for p in libqwayland-generic.so libqwayland-egl.so; do
+            [ -f "$QT_ROOT_DIR/plugins/platforms/$p" ] && PLUGINS="$PLUGINS;$p"
+          done
+          export EXTRA_PLATFORM_PLUGINS="libqoffscreen.so${PLUGINS}"
+          export EXTRA_QT_PLUGINS="iconengines;imageformats;svg"
+          export QMAKE="$QT_ROOT_DIR/bin/qmake"
+          ./linuxdeploy-x86_64.AppImage --appdir AppDir --plugin qt --output appimage \
+            --desktop-file AppDir/usr/share/applications/org.cactusplot.CactusPlot.desktop \
+            --icon-file packaging/icons/cactusplot-256.png --icon-filename org.cactusplot.CactusPlot
+          for f in CactusPlot*.AppImage; do [ "$f" = CactusPlot-x86_64.AppImage ] || mv "$f" CactusPlot-x86_64.AppImage; done
+          chmod +x CactusPlot-x86_64.AppImage
+          QT_QPA_PLATFORM=offscreen ./CactusPlot-x86_64.AppImage --appimage-extract-and-run --version
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-appimage
+          path: CactusPlot-x86_64.AppImage
+
+  # ---------------------------------------------------------------- macOS universal (Apple silicon + Intel)
+  macos:
+    name: macOS (universal .dmg)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          modules: qtimageformats
+          cache: true
+      - name: Build
+        run: |
+          brew install ninja || true
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0
+          cmake --build build --parallel
+      - name: Test
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: ctest --test-dir build --output-on-failure
+      - name: Bundle and sign (ad hoc)
+        run: |
+          cmake --install build --prefix out
+          codesign --force --deep --sign - out/CactusPlot.app
+          lipo -info out/CactusPlot.app/Contents/MacOS/CactusPlot
+          out/CactusPlot.app/Contents/MacOS/CactusPlot --version
+          mkdir dmg && cp -R out/CactusPlot.app dmg/ && ln -s /Applications dmg/Applications
+          hdiutil create -volname CactusPlot -srcfolder dmg -ov -format UDZO CactusPlot-macOS-universal.dmg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-dmg
+          path: CactusPlot-macOS-universal.dmg
+
+  # ---------------------------------------------------------------- Windows
+  windows:
+    name: Windows (installer + portable zip)
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
+          arch: win64_msvc2022_64
+          modules: qtimageformats
+          cache: true
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Build
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel
+      - name: Test
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: ctest --test-dir build --output-on-failure
+      - name: Package
+        run: |
+          cd build
+          cpack -G "NSIS;ZIP"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-packages
+          path: |
+            build/*.exe
+            build/*.zip
+
+  # ---------------------------------------------------------------- release
+  release:
+    name: Publish release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [linux, appimage, macos, windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
