@@ -64,7 +64,8 @@ set_target_properties(cactusplot PROPERTIES
     MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
     MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/packaging/macos/Info.plist.in")
 if(APPLE)
-    set_target_properties(cactusplot PROPERTIES OUTPUT_NAME CactusPlot)
+    # macdeployqt copies the Qt frameworks into Contents/Frameworks; the binary must search there
+    set_target_properties(cactusplot PROPERTIES OUTPUT_NAME CactusPlot INSTALL_RPATH "@executable_path/../Frameworks")
 endif()
 
 include(GNUInstallDirs)

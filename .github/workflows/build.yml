@@ -89,7 +89,9 @@ jobs:
           ./linuxdeploy-x86_64.AppImage --appdir AppDir --plugin qt --output appimage \
             --desktop-file AppDir/usr/share/applications/org.cactusplot.CactusPlot.desktop \
             --icon-file packaging/icons/cactusplot-256.png --icon-filename org.cactusplot.CactusPlot
-          mv CactusPlot*.AppImage CactusPlot-x86_64.AppImage
+          for f in CactusPlot*.AppImage; do [ "$f" = CactusPlot-x86_64.AppImage ] || mv "$f" CactusPlot-x86_64.AppImage; done
+          chmod +x CactusPlot-x86_64.AppImage
+          QT_QPA_PLATFORM=offscreen ./CactusPlot-x86_64.AppImage --appimage-extract-and-run --version
       - uses: actions/upload-artifact@v4
         with:
           name: linux-appimage
