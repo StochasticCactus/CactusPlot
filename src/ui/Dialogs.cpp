@@ -28,6 +28,7 @@
 #include <QStackedWidget>
 #include <QTableWidget>
 #include <QTextEdit>
+#include <QTimer>
 #include <QVBoxLayout>
 #include <cmath>
 
@@ -113,11 +114,12 @@ TransformDialog::TransformDialog(Document* doc, QWidget* parent) : QDialog(paren
 {
     setWindowTitle(tr("Data transformations"));
     setWindowIcon(icons::get(QStringLiteral("transform")));
-    resize(820, 560);
     auto* lay = new QVBoxLayout(this);
     auto* split = new QSplitter(this);
+    split->setObjectName(QStringLiteral("transformSplit"));
+    split->setChildrenCollapsible(false);
+    split->setHandleWidth(8);  // wide enough to grab on every platform
     m_list = new QListWidget(split);
-    m_list->setMaximumWidth(230);
     auto* right = new QWidget(split);
     auto* rl = new QVBoxLayout(right);
     auto* srcForm = new QFormLayout;
@@ -218,6 +220,21 @@ TransformDialog::TransformDialog(Document* doc, QWidget* parent) : QDialog(paren
         m_replace->setEnabled(!inPlace && n != tr("Statistics") && n != tr("Feature extraction"));
     });
     m_list->setCurrentRow(0);
+
+    // the list is as wide as its longest entry; long help texts wrap instead of widening the window
+    m_list->setMinimumWidth(m_list->sizeHintForColumn(0) + 2 * m_list->frameWidth() + 24);
+    m_list->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    for (QLabel* l : m_stack->findChildren<QLabel*>())
+        if (!l->text().startsWith(QLatin1String("<b>"))) l->setWordWrap(true);
+    QSettings st;
+    if (!restoreGeometry(st.value(QStringLiteral("windows/transform")).toByteArray())) resize(900, 600);
+    if (!split->restoreState(st.value(QStringLiteral("windows/transformSplit")).toByteArray()))
+        split->setSizes({m_list->minimumWidth(), 900 - m_list->minimumWidth()});
+    connect(this, &QDialog::finished, this, [this, split] {
+        QSettings st;
+        st.setValue(QStringLiteral("windows/transform"), saveGeometry());
+        st.setValue(QStringLiteral("windows/transformSplit"), split->saveState());
+    });
 }
 
 QWidget* TransformDialog::page(const QString& name)
@@ -532,9 +549,15 @@ FitDialog::FitDialog(Document* doc, QWidget* parent) : QDialog(parent), m_doc(do
 {
     setWindowTitle(tr("Curve fitting"));
     setWindowIcon(icons::get(QStringLiteral("fit")));
-    resize(980, 640);
     auto* lay = new QHBoxLayout(this);
-    auto* left = new QVBoxLayout;
+    auto* split = new QSplitter(this);
+    split->setObjectName(QStringLiteral("fitSplit"));
+    split->setChildrenCollapsible(false);
+    split->setHandleWidth(8);
+    lay->addWidget(split);
+    auto* leftW = new QWidget(split);
+    auto* left = new QVBoxLayout(leftW);
+    left->setContentsMargins(0, 0, 0, 0);
     auto* form = new QFormLayout;
     m_source = new QComboBox(this);
     const Selection& sel = doc->selection();
@@ -574,17 +597,35 @@ FitDialog::FitDialog(Document* doc, QWidget* parent) : QDialog(parent), m_doc(do
     btns->addWidget(applyB);
     btns->addWidget(closeB);
     left->addLayout(btns);
-    lay->addLayout(left, 1);
-    auto* right = new QVBoxLayout;
+    auto* rightW = new QWidget(split);
+    auto* right = new QVBoxLayout(rightW);
+    right->setContentsMargins(0, 0, 0, 0);
     m_preview = new QLabel(this);
-    m_preview->setMinimumSize(420, 280);
+    m_preview->setMinimumSize(240, 160);
+    m_preview->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);  // the image follows the pane, not the reverse
+    m_previewTimer = new QTimer(this);
+    m_previewTimer->setSingleShot(true);
+    m_previewTimer->setInterval(120);
+    connect(m_previewTimer, &QTimer::timeout, this, [this] { updatePreview(m_previewParams); });
+    m_preview->installEventFilter(this);
     m_preview->setAlignment(Qt::AlignCenter);
     right->addWidget(m_preview, 1);
     m_report = new QPlainTextEdit(this);
     m_report->setReadOnly(true);
     m_report->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
     right->addWidget(m_report);
-    lay->addLayout(right, 1);
+    split->addWidget(leftW);
+    split->addWidget(rightW);
+    split->setStretchFactor(0, 1);
+    split->setStretchFactor(1, 1);
+    QSettings st;
+    if (!restoreGeometry(st.value(QStringLiteral("windows/fit")).toByteArray())) resize(1000, 640);
+    if (!split->restoreState(st.value(QStringLiteral("windows/fitSplit")).toByteArray())) split->setSizes({560, 440});
+    connect(this, &QDialog::finished, this, [this, split] {
+        QSettings st;
+        st.setValue(QStringLiteral("windows/fit"), saveGeometry());
+        st.setValue(QStringLiteral("windows/fitSplit"), split->saveState());
+    });
 
     connect(m_model, &QComboBox::activated, this, &FitDialog::onModelChosen);
     connect(m_formula, &QLineEdit::textChanged, this, [this] {
@@ -728,7 +769,6 @@ void FitDialog::updatePreview(const QVector<double>& params)
     if (!s) return;
     Project p = presets::newProject(presets::defaultName());
     Graph& pg = p.graphs[0];
-    pg.vxmin = 0.18; pg.vxmax = 1.25; pg.vymin = 0.16; pg.vymax = 0.92;
     pg.xscale = g->xscale;
     pg.yscale = g->yscale;
     DataSet& d = pg.ensureSet(0);
@@ -749,13 +789,25 @@ void FitDialog::updatePreview(const QVector<double>& params)
     f.cols[1] = ys;
     f.legend = m_haveResult ? tr("fit") : tr("initial guess");
     pg.autoscale(3, 0);
+    m_previewParams = params;
+    // the preview page has the shape of the pane, and the graph fills the page with room for the labels
+    const double aspect = std::clamp(double(m_preview->height()) / std::max(1, m_preview->width()), 0.4, 1.5);
     p.page.width = 640;
-    p.page.height = 420;
+    p.page.height = 640 * aspect;
+    const double w = p.page.viewWidth(), h = p.page.viewHeight();  // the short side is 1
+    pg.vxmin = 0.13 * w + 0.05; pg.vxmax = w - 0.04;
+    pg.vymin = 0.10 * h + 0.06; pg.vymax = h - 0.04;
     const QImage img = renderToImage(p, int(m_preview->width() * devicePixelRatioF()));
     QPixmap pm = QPixmap::fromImage(img);
     pm.setDevicePixelRatio(devicePixelRatioF());
     m_preview->setPixmap(pm);
     if (!err.isEmpty()) m_report->setPlainText(tr("Formula error: %1").arg(err));
+}
+
+bool FitDialog::eventFilter(QObject* o, QEvent* e)
+{
+    if (o == m_preview && e->type() == QEvent::Resize && m_previewTimer) m_previewTimer->start();
+    return QDialog::eventFilter(o, e);
 }
 
 void FitDialog::applyResult()

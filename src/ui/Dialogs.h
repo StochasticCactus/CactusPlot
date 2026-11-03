@@ -19,6 +19,7 @@ class QListWidget;
 class QStackedWidget;
 class QTableWidget;
 class QLabel;
+class QTimer;
 class QTextEdit;
 
 namespace cactus::ui {
@@ -85,6 +86,11 @@ private:
     QPlainTextEdit* m_report;
     fit::Result m_result;
     bool m_haveResult = false;
+    QVector<double> m_previewParams;  ///< parameters of the curve shown in the preview
+    QTimer* m_previewTimer = nullptr; ///< redraws the preview after the pane is resized
+
+protected:
+    bool eventFilter(QObject* o, QEvent* e) override;
 };
 
 // ---------------------------------------------------------------- import

@@ -30,7 +30,7 @@ public:
     bool openFile(const QString& path);
     void setProject(const Project& p, const QString& path);
     void checkAutosaveRecovery();
-    /// Open a secondary window by name (appearance, seteditor, commands, explorer); returns it.
+    /// Open a secondary window by name (appearance, seteditor, commands, explorer, transform, fit); returns it.
     QWidget* openWindow(const QString& which);
 
 protected:

@@ -192,6 +192,12 @@ QWidget* MainWindow::openWindow(const QString& which)
     if (which == QLatin1String("seteditor")) { showWindow(m_sheetDock); return m_sheetDock; }
     if (which == QLatin1String("commands")) { showWindow(m_consoleDock); return m_consoleDock; }
     if (which == QLatin1String("explorer")) { showWindow(m_treeDock); return m_treeDock; }
+    if (which == QLatin1String("transform") || which == QLatin1String("fit")) {
+        QDialog* d = which == QLatin1String("fit") ? static_cast<QDialog*>(new FitDialog(m_doc, this)) : new TransformDialog(m_doc, this);
+        d->setAttribute(Qt::WA_DeleteOnClose);
+        d->show();
+        return d;
+    }
     return this;
 }
 
