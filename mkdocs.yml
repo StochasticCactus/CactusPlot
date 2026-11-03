@@ -1,0 +1,77 @@
+# Documentation site: https://stochasticcactus.github.io/CactusGui/
+# Preview locally:  pip install mkdocs-material==9.5.39 && mkdocs serve
+site_name: CactusPlot
+site_description: Modern, cross-platform 2D scientific plotting, compatible with Grace/xmgrace
+site_url: https://stochasticcactus.github.io/CactusGui/
+repo_url: https://github.com/StochasticCactus/CactusGui
+repo_name: StochasticCactus/CactusGui
+edit_uri: edit/main/docs/
+copyright: CactusPlot is free software under the GNU GPL version 2 or later.
+
+theme:
+  name: material
+  logo: images/logo.png
+  favicon: images/logo.png
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - search.highlight
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: deep orange
+      toggle:
+        icon: material/weather-night
+        name: Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: deep orange
+      toggle:
+        icon: material/weather-sunny
+        name: Light mode
+
+markdown_extensions:
+  - tables
+  - toc:
+      permalink: true
+  - md_in_html
+
+exclude_docs: |
+  cactusplot.1
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Installation: install.md
+      - Tutorial: tutorial.md
+      - Coming from Grace: grace-migration.md
+  - User guide:
+      - The main window: guide/window.md
+      - Getting data in: guide/data.md
+      - GROMACS .xvg files: guide/gromacs.md
+      - Graphs and sets: guide/graphs.md
+      - Changing the appearance: guide/appearance.md
+      - Styles and colours: guide/styles-colors.md
+      - Axes and ticks: guide/axes.md
+      - Text and math: guide/text.md
+      - Annotations and regions: guide/annotations.md
+      - Data analysis: guide/analysis.md
+      - Exporting and printing: guide/export.md
+  - Reference:
+      - Command-line options: reference/command-line.md
+      - Command language: reference/command-language.md
+      - Functions: reference/functions.md
+      - Set types, symbols and lines: reference/set-types.md
+      - File formats: reference/file-formats.md
+      - Mouse and keyboard: reference/shortcuts.md
+  - FAQ: faq.md
+  - Development: development.md
+
+validation:
+  links:
+    anchors: warn
+    unrecognized_links: warn

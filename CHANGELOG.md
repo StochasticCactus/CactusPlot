@@ -9,10 +9,12 @@
   - gracebat-compatible command line (`cactusbat`).
 - Every Grace set type and graph type, all tick-label formats, the 32 Grace fill patterns, and rich
   text with Grace escapes and `$TeX$` math.
-- Modern default style, 7 style presets, about 1800 named colours, 51 palettes and 158 colormaps.
+- Modern default style, 7 style presets, about 1800 named colours, 52 palettes and 158 colormaps.
 - Curve fitting with live preview, regressions, FFT, histograms, interpolation, running statistics
   and other transformations.
 - Exports to PDF, SVG, EPS/PS, PNG, JPEG, TIFF, BMP, PPM and WebP.
 - Opens GROMACS `.xvg` files directly: titles, axis labels and legends come along, `@TYPE xydy`
   gives error bars, and every column becomes its own set (no `-nxy` needed).
+- Full documentation in `docs/` (installation, tutorial, user guide, command and function
+  reference), also published as a website.
 - Undo/redo, live inspector, data sheet, command console, drawing tools, regions, themes, autosave.

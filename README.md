@@ -23,7 +23,7 @@ saves **Grace/xmgrace projects**, speaks the **Grace command language**, can be 
   light grid, colour-blind-safe colours, symbols with contrasting edges, proper minus signs and
   ×10ⁿ labels, an automatically placed legend, antialiased HiDPI rendering. Seven style presets
   (Modern, Publication, Presentation, Dark, Minimal, Journal, Grace Classic), switchable with one click.
-- **Huge colour library.** ~1800 named colours (CSS, X11, xkcd, Tableau, Grace), 51 qualitative
+- **Huge colour library.** ~1800 named colours (CSS, X11, xkcd, Tableau, Grace), 52 qualitative
   palettes (Okabe–Ito, Tableau, ColorBrewer, Paul Tol, Glasbey, …) and 158 colormaps (viridis
   family, cmocean, Crameri's Scientific Colour Maps, CET/colorcet, ColorBrewer), plus transparency,
   gradients and Grace's 32 fill patterns.
@@ -112,7 +112,8 @@ cactusplot --style Publication figure.agr   # ... or restyled
 
 In the window: **double-click** anything to change its appearance, **scroll** to zoom the graph under
 the cursor, **drag** to pan, **Ctrl+D** opens the set editor, **Ctrl+F** fits a curve, **Ctrl+T** opens
-transformations and **Ctrl+K** the command window. See the [manual](docs/manual.md).
+transformations and **Ctrl+K** the command window. See the [documentation](docs/index.md), starting
+with the [tutorial](docs/tutorial.md).
 
 <p align="center"><img src="docs/images/screenshot-dark.png" width="700" alt="Dark theme"/>
 <img src="docs/images/appearance.png" width="200" alt="Appearance window"/></p>
@@ -141,8 +142,11 @@ xmgrace can read. Details: [docs/grace-migration.md](docs/grace-migration.md).
 
 ## Documentation
 
-- [User manual](docs/manual.md)
+- [Documentation home](docs/index.md): installation, tutorial, user guide and reference
+- [Tutorial: your first plot](docs/tutorial.md)
 - [Moving from Grace/xmgrace](docs/grace-migration.md)
+- [GROMACS `.xvg` files](docs/guide/gromacs.md)
+- [Command language](docs/reference/command-language.md) and [command-line options](docs/reference/command-line.md)
 - In the app: **Help ▸ Command Reference** and **Help ▸ Mouse and Keyboard**
 - `man cactusplot` (Linux)
 

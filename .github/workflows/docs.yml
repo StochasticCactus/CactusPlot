@@ -1,0 +1,49 @@
+name: Documentation
+
+# Checks that the documentation builds (broken links fail the build). On main, in a public
+# repository, it also publishes the site with GitHub Pages; enable it once under
+# Settings > Pages > Source: GitHub Actions.
+on:
+  push:
+    paths: ["docs/**", "mkdocs.yml", ".github/workflows/docs.yml"]
+  pull_request:
+    paths: ["docs/**", "mkdocs.yml", ".github/workflows/docs.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build the site
+        run: |
+          pip install mkdocs-material==9.5.39
+          mkdocs build --strict
+      - uses: actions/upload-pages-artifact@v3
+        if: github.ref == 'refs/heads/main' && !github.event.repository.private
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main' && !github.event.repository.private
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

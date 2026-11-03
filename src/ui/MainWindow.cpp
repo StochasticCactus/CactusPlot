@@ -245,6 +245,11 @@ void MainWindow::buildActions()
         d.exec();
     });
     m_actions.value(QStringLiteral("prefs"))->setMenuRole(QAction::PreferencesRole);
+    // some platforms have no standard key for these; use the common ones there
+    if (QKeySequence::keyBindings(QKeySequence::SaveAs).isEmpty())
+        m_actions.value(QStringLiteral("saveas"))->setShortcut(QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_S));
+    if (QKeySequence::keyBindings(QKeySequence::Preferences).isEmpty())
+        m_actions.value(QStringLiteral("prefs"))->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_Comma));
 
     act(QStringLiteral("sheet"), tr("Edit &Set (Spreadsheet)..."), QStringLiteral("table"), QKeySequence(Qt::CTRL | Qt::Key_D), [this] { showWindow(m_sheetDock); });
     act(QStringLiteral("transform"), tr("&Transformations..."), QStringLiteral("transform"), QKeySequence(Qt::CTRL | Qt::Key_T), [this] {
@@ -318,8 +323,8 @@ void MainWindow::buildActions()
     auto* regions = act(QStringLiteral("showregions"), tr("Show &Regions"), QStringLiteral("region"), QKeySequence(), [this](bool on) { m_view->setShowRegions(on); });
     regions->setCheckable(true);
 
-    act(QStringLiteral("help"), tr("CactusPlot &Manual"), QStringLiteral("help"), QKeySequence::HelpContents,
-        [] { QDesktopServices::openUrl(QUrl(QStringLiteral(CACTUS_HOMEPAGE "/blob/main/docs/manual.md"))); });
+    act(QStringLiteral("help"), tr("CactusPlot &Documentation"), QStringLiteral("help"), QKeySequence::HelpContents,
+        [] { QDesktopServices::openUrl(QUrl(QStringLiteral(CACTUS_HOMEPAGE "/blob/main/docs/index.md"))); });
     act(QStringLiteral("cmdref"), tr("&Command Reference"), QString(), QKeySequence(), [this] { showCommandReference(); });
     act(QStringLiteral("shortcuts"), tr("&Mouse and Keyboard"), QString(), QKeySequence(), [this] { showShortcuts(); });
     act(QStringLiteral("about"), tr("&About CactusPlot"), QString(), QKeySequence(), [this] { about(); });
