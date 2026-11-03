@@ -56,8 +56,10 @@ int runGui(QApplication& app, cli::Outcome& outcome)
         const QStringList size = qEnvironmentVariable("CACTUS_SCREENSHOT_SIZE", QStringLiteral("1440x900")).split(QLatin1Char('x'));
         w.resize(size.value(0).toInt(), size.value(1).toInt());
         w.show();
-        QTimer::singleShot(1500, &w, [&w, shot] {
-            w.grab().save(shot);
+        const QString which = qEnvironmentVariable("CACTUS_SCREENSHOT_WINDOW");
+        QWidget* target = which.isEmpty() ? static_cast<QWidget*>(&w) : w.openWindow(which);
+        QTimer::singleShot(1500, &w, [target, shot] {
+            target->grab().save(shot);
             QApplication::quit();
         });
         return app.exec();

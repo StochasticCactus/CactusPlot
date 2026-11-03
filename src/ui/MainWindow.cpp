@@ -9,7 +9,7 @@
 #include <QDesktopServices>
 #include <QDialogButtonBox>
 #include <QDir>
-#include <QDockWidget>
+#include <QDialog>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QLabel>
@@ -48,7 +48,6 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
 {
     setWindowIcon(icons::appIcon());
     setAcceptDrops(true);
-    setDockOptions(QMainWindow::AnimatedDocks | QMainWindow::AllowTabbedDocks | QMainWindow::AllowNestedDocks);
     m_doc = new Document(this);
     QSettings st;
     m_doc->setProject(presets::newProject(st.value(QStringLiteral("new/preset"), presets::defaultName()).toString()));
@@ -60,14 +59,28 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
     buildMenus();
     buildToolbars();
 
-    m_locator = new QLabel(this);
-    m_locator->setMinimumWidth(320);
-    statusBar()->addWidget(m_locator, 1);
-    m_zoomLabel = new QLabel(QStringLiteral("100%"), this);
-    statusBar()->addPermanentWidget(m_zoomLabel);
-    connect(m_view, &PlotView::locatorChanged, m_locator, &QLabel::setText);
+    // Grace-style locator: coordinates under the cursor, shown in the menu bar
+    auto* corner = new QWidget(this);
+    auto* cl = new QHBoxLayout(corner);
+    cl->setContentsMargins(0, 0, 10, 0);
+    cl->setSpacing(14);
+    m_locator = new QLabel(corner);
+    m_locator->setMinimumWidth(300);
+    m_locator->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    m_locator->setForegroundRole(QPalette::PlaceholderText);
+    m_zoomLabel = new QLabel(QStringLiteral("100%"), corner);
+    m_zoomLabel->setForegroundRole(QPalette::PlaceholderText);
+    cl->addWidget(m_locator);
+    cl->addWidget(m_zoomLabel);
+    menuBar()->setCornerWidget(corner, Qt::TopRightCorner);
+    statusBar()->hide();
+    m_flashTimer = new QTimer(this);
+    m_flashTimer->setSingleShot(true);
+    connect(m_view, &PlotView::locatorChanged, this, [this](const QString& t) {
+        if (!m_flashTimer->isActive()) m_locator->setText(t);
+    });
     connect(m_view, &PlotView::zoomChanged, this, [this](double z) { m_zoomLabel->setText(QStringLiteral("%1%").arg(qRound(z * 100))); });
-    connect(m_view, &PlotView::propertiesRequested, this, [this] { raiseDock(m_inspectorDock); });
+    connect(m_view, &PlotView::propertiesRequested, this, [this] { showAppearance(); });
     connect(m_view, &PlotView::contextMenuRequested, this, &MainWindow::showContextMenu);
     connect(m_view, &PlotView::filesDropped, this, [this](const QStringList& files) { for (const QString& f : files) openFile(f); });
     connect(m_view, &PlotView::toolChanged, this, [this](PlotView::Tool t) {
@@ -84,60 +97,107 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent)
 
     resize(1440, 900);
     restoreGeometry(st.value(QStringLiteral("window/geometry")).toByteArray());
-    restoreState(st.value(QStringLiteral("window/state")).toByteArray());
+    restoreState(st.value(QStringLiteral("window/state2")).toByteArray());
     updateTitle();
     updateRecentMenu();
 }
 
 // ---------------------------------------------------------------- docks
 
+QDialog* MainWindow::makeToolWindow(const QString& title, QWidget* content, const QString& name, const QSize& size)
+{
+    auto* d = new QDialog(this, Qt::Tool);
+    d->setObjectName(name);
+    d->setWindowTitle(title);
+    auto* l = new QVBoxLayout(d);
+    l->setContentsMargins(0, 0, 0, 0);
+    content->setParent(d);
+    l->addWidget(content);
+    d->resize(size);
+    const QByteArray geo = QSettings().value(QStringLiteral("windows/") + name).toByteArray();
+    if (!geo.isEmpty()) d->restoreGeometry(geo);
+    return d;
+}
+
 void MainWindow::buildDocks()
 {
+    // Like Grace, the main window only shows the plot. Appearance, data editing, the command window and
+    // the object explorer open as separate windows from the menus or by double-clicking.
     m_tree = new ProjectTree(m_doc, this);
-    m_treeDock = new QDockWidget(tr("Project"), this);
-    m_treeDock->setObjectName(QStringLiteral("ProjectDock"));
-    m_treeDock->setWidget(m_tree);
-    addDockWidget(Qt::LeftDockWidgetArea, m_treeDock);
-
+    m_treeDock = makeToolWindow(tr("Explorer"), m_tree, QStringLiteral("Explorer"), QSize(300, 460));
     m_inspector = new Inspector(m_doc, this);
-    m_inspectorDock = new QDockWidget(tr("Properties"), this);
-    m_inspectorDock->setObjectName(QStringLiteral("PropertiesDock"));
-    m_inspectorDock->setWidget(m_inspector);
-    m_inspectorDock->setMinimumWidth(330);
-    addDockWidget(Qt::RightDockWidgetArea, m_inspectorDock);
-
+    m_inspectorDock = makeToolWindow(tr("Appearance"), m_inspector, QStringLiteral("Appearance"), QSize(400, 640));
     m_sheet = new DataSheet(m_doc, this);
-    m_sheetDock = new QDockWidget(tr("Data"), this);
-    m_sheetDock->setObjectName(QStringLiteral("DataDock"));
-    m_sheetDock->setWidget(m_sheet);
-    addDockWidget(Qt::BottomDockWidgetArea, m_sheetDock);
-
+    m_sheetDock = makeToolWindow(tr("Set Editor"), m_sheet, QStringLiteral("SetEditor"), QSize(560, 480));
     m_console = new Console(m_doc, this);
-    m_consoleDock = new QDockWidget(tr("Console"), this);
-    m_consoleDock->setObjectName(QStringLiteral("ConsoleDock"));
-    m_consoleDock->setWidget(m_console);
-    addDockWidget(Qt::BottomDockWidgetArea, m_consoleDock);
-    tabifyDockWidget(m_sheetDock, m_consoleDock);
-    m_sheetDock->raise();
-    resizeDocks({m_sheetDock}, {220}, Qt::Vertical);
-    resizeDocks({m_treeDock, m_inspectorDock}, {250, 360}, Qt::Horizontal);
+    m_consoleDock = makeToolWindow(tr("Commands"), m_console, QStringLiteral("Commands"), QSize(640, 340));
 
     connect(m_inspector, &Inspector::editDataRequested, this, [this](int g, int s) {
         m_sheet->showSet(g, s);
-        raiseDock(m_sheetDock);
+        showWindow(m_sheetDock);
     });
     connect(m_inspector, &Inspector::applyPresetRequested, this, &MainWindow::applyPreset);
     connect(m_tree, &ProjectTree::editDataRequested, this, [this](int g, int s) {
         m_sheet->showSet(g, s);
-        raiseDock(m_sheetDock);
+        showWindow(m_sheetDock);
     });
-    connect(m_tree, &ProjectTree::propertiesRequested, this, [this] { raiseDock(m_inspectorDock); });
+    connect(m_tree, &ProjectTree::propertiesRequested, this, [this] { showAppearance(); });
 }
 
-void MainWindow::raiseDock(QDockWidget* d)
+void MainWindow::showWindow(QDialog* d)
 {
-    d->show();
+    if (!d->isVisible()) {
+        // first opening: place next to the main window
+        if (QSettings().value(QStringLiteral("windows/") + d->objectName()).toByteArray().isEmpty() && !d->property("placed").toBool()) {
+            const QRect g = frameGeometry();
+            d->move(g.right() - d->width() - 40, g.top() + 90);
+            d->setProperty("placed", true);
+        }
+        d->show();
+    }
     d->raise();
+    d->activateWindow();
+}
+
+void MainWindow::showAppearance(int kind)
+{
+    // Grace-style entry points: Plot/Graph/Set appearance and Axis properties
+    const int g = std::max(0, m_doc->currentGraph());
+    const Selection cur = m_doc->selection();
+    switch (kind) {
+    case Selection::Page: m_doc->select(Selection{Selection::Page, -1, -1}); break;
+    case Selection::Graph: m_doc->select(Selection{Selection::Graph, g, -1}); break;
+    case Selection::Axis:
+        if (cur.kind != Selection::Axis) m_doc->select(Selection{Selection::Axis, g, 0});
+        break;
+    case Selection::Set:
+        if (cur.kind != Selection::Set) {
+            const Graph* gr = m_doc->project().graph(g);
+            int si = -1;
+            if (gr) for (int i = 0; i < gr->sets.size(); ++i) if (gr->sets[i].active) { si = i; break; }
+            if (si >= 0) m_doc->select(Selection{Selection::Set, g, si});
+        }
+        break;
+    default:
+        if (cur.kind == Selection::None) m_doc->select(Selection{Selection::Graph, g, -1});
+        break;
+    }
+    showWindow(m_inspectorDock);
+}
+
+QWidget* MainWindow::openWindow(const QString& which)
+{
+    if (which == QLatin1String("appearance")) { showAppearance(Selection::Set); return m_inspectorDock; }
+    if (which == QLatin1String("seteditor")) { showWindow(m_sheetDock); return m_sheetDock; }
+    if (which == QLatin1String("commands")) { showWindow(m_consoleDock); return m_consoleDock; }
+    if (which == QLatin1String("explorer")) { showWindow(m_treeDock); return m_treeDock; }
+    return this;
+}
+
+void MainWindow::flash(const QString& msg, int ms)
+{
+    m_locator->setText(msg);
+    m_flashTimer->start(ms);
 }
 
 // ---------------------------------------------------------------- actions
@@ -161,7 +221,7 @@ void MainWindow::buildActions()
         [this] { importClipboard(); });
     act(QStringLiteral("export"), tr("&Export..."), QStringLiteral("export"), QKeySequence(Qt::CTRL | Qt::Key_E), [this] { exportDialog(); });
     act(QStringLiteral("reexport"), tr("Export &Again"), QString(), QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_E), [this] {
-        if (ExportDialog::exportWithLastSettings(m_doc, this)) statusBar()->showMessage(tr("Exported to %1").arg(QSettings().value(QStringLiteral("export/last")).toString()), 4000);
+        if (ExportDialog::exportWithLastSettings(m_doc, this)) flash(tr("Exported to %1").arg(QSettings().value(QStringLiteral("export/last")).toString()), 4000);
         else exportDialog();
     });
     act(QStringLiteral("print"), tr("&Print..."), QStringLiteral("print"), QKeySequence::Print, [this] { printPlot(); });
@@ -185,7 +245,7 @@ void MainWindow::buildActions()
     });
     m_actions.value(QStringLiteral("prefs"))->setMenuRole(QAction::PreferencesRole);
 
-    act(QStringLiteral("sheet"), tr("Data &Sheet"), QStringLiteral("table"), QKeySequence(Qt::CTRL | Qt::Key_D), [this] { raiseDock(m_sheetDock); });
+    act(QStringLiteral("sheet"), tr("Edit &Set (Spreadsheet)..."), QStringLiteral("table"), QKeySequence(Qt::CTRL | Qt::Key_D), [this] { showWindow(m_sheetDock); });
     act(QStringLiteral("transform"), tr("&Transformations..."), QStringLiteral("transform"), QKeySequence(Qt::CTRL | Qt::Key_T), [this] {
         auto* d = new TransformDialog(m_doc, this);
         d->setAttribute(Qt::WA_DeleteOnClose);
@@ -208,7 +268,13 @@ void MainWindow::buildActions()
         d->showPage(tr("Statistics"));
         d->show();
     });
-    act(QStringLiteral("console"), tr("Command &Console"), QStringLiteral("console"), QKeySequence(Qt::CTRL | Qt::Key_K), [this] { raiseDock(m_consoleDock); });
+    act(QStringLiteral("appearance"), tr("&Appearance..."), QStringLiteral("sliders"), QKeySequence(Qt::CTRL | Qt::Key_P | Qt::SHIFT), [this] { showAppearance(); });
+    act(QStringLiteral("plotapp"), tr("&Plot Appearance..."), QStringLiteral("page"), QKeySequence(), [this] { showAppearance(Selection::Page); });
+    act(QStringLiteral("graphapp"), tr("&Graph Appearance..."), QStringLiteral("graph"), QKeySequence(), [this] { showAppearance(Selection::Graph); });
+    act(QStringLiteral("setapp"), tr("&Set Appearance..."), QStringLiteral("set"), QKeySequence(), [this] { showAppearance(Selection::Set); });
+    act(QStringLiteral("axisapp"), tr("A&xis Properties..."), QStringLiteral("axis"), QKeySequence(), [this] { showAppearance(Selection::Axis); });
+    act(QStringLiteral("explorer"), tr("&Explorer"), QStringLiteral("layers"), QKeySequence(), [this] { showWindow(m_treeDock); });
+    act(QStringLiteral("console"), tr("&Commands..."), QStringLiteral("console"), QKeySequence(Qt::CTRL | Qt::Key_K), [this] { showWindow(m_consoleDock); });
     act(QStringLiteral("clearregions"), tr("Clear &Regions"), QString(), QKeySequence(), [this] {
         m_doc->modify(tr("Clear regions"), [](Project& p) { for (Region& r : p.regions) r.active = false; });
     });
@@ -339,6 +405,11 @@ void MainWindow::buildMenus()
     data->addAction(m_actions.value(QStringLiteral("console")));
 
     auto* plot = menuBar()->addMenu(tr("&Plot"));
+    plot->addAction(m_actions.value(QStringLiteral("plotapp")));
+    plot->addAction(m_actions.value(QStringLiteral("graphapp")));
+    plot->addAction(m_actions.value(QStringLiteral("setapp")));
+    plot->addAction(m_actions.value(QStringLiteral("axisapp")));
+    plot->addSeparator();
     plot->addAction(m_actions.value(QStringLiteral("autoscale")));
     plot->addAction(m_actions.value(QStringLiteral("autoscalex")));
     plot->addAction(m_actions.value(QStringLiteral("autoscaley")));
@@ -408,11 +479,6 @@ void MainWindow::buildMenus()
     auto* tools = m_viewMenu->addMenu(tr("&Tools"));
     tools->addActions(m_toolGroup->actions());
     m_viewMenu->addSeparator();
-    m_viewMenu->addAction(m_treeDock->toggleViewAction());
-    m_viewMenu->addAction(m_inspectorDock->toggleViewAction());
-    m_viewMenu->addAction(m_sheetDock->toggleViewAction());
-    m_viewMenu->addAction(m_consoleDock->toggleViewAction());
-    m_viewMenu->addSeparator();
     auto* theme = m_viewMenu->addMenu(icons::get(QStringLiteral("theme")), tr("T&heme"));
     const QStringList themes{tr("Follow the System"), tr("Light"), tr("Dark")};
     auto* tg = new QActionGroup(this);
@@ -427,6 +493,12 @@ void MainWindow::buildMenus()
         tg->addAction(a);
     }
 
+    auto* win = menuBar()->addMenu(tr("&Window"));
+    win->addAction(m_actions.value(QStringLiteral("appearance")));
+    win->addAction(m_actions.value(QStringLiteral("sheet")));
+    win->addAction(m_actions.value(QStringLiteral("console")));
+    win->addAction(m_actions.value(QStringLiteral("explorer")));
+
     auto* help = menuBar()->addMenu(tr("&Help"));
     help->addAction(m_actions.value(QStringLiteral("help")));
     help->addAction(m_actions.value(QStringLiteral("cmdref")));
@@ -438,24 +510,27 @@ void MainWindow::buildMenus()
 
 void MainWindow::buildToolbars()
 {
-    auto* main = addToolBar(tr("Main"));
-    main->setObjectName(QStringLiteral("MainToolbar"));
-    main->setIconSize(QSize(20, 20));
-    main->setMovable(false);
-    for (const char* id : {"new", "open", "save", "export", "|", "undo", "redo", "|", "import", "sheet", "evaluate", "transform", "fit", "|",
-                           "autoscale", "grid", "legend", "addgraph", "|", "zoomin", "zoomout", "fitpage", "|", "console"}) {
-        if (QString::fromLatin1(id) == QLatin1String("|")) main->addSeparator();
-        else main->addAction(m_actions.value(QString::fromLatin1(id)));
+    // One slim button column on the left, as in xmgrace: navigation first, then drawing tools.
+    auto* bar = new QToolBar(tr("Buttons"), this);
+    bar->setObjectName(QStringLiteral("ButtonColumn"));
+    bar->setIconSize(QSize(18, 18));
+    bar->setOrientation(Qt::Vertical);
+    bar->setMovable(false);
+    bar->setFloatable(false);
+    const QList<QAction*> tools = m_toolGroup->actions();
+    for (int i = 0; i < tools.size(); ++i) {
+        if (i == 7) {  // before the drawing tools
+            bar->addSeparator();
+            for (const char* id : {"autoscale", "zoomin", "zoomout", "fitpage"}) bar->addAction(m_actions.value(QString::fromLatin1(id)));
+            bar->addSeparator();
+        }
+        bar->addAction(tools[i]);
     }
-    auto* tools = new QToolBar(tr("Tools"), this);
-    tools->setObjectName(QStringLiteral("ToolsToolbar"));
-    tools->setIconSize(QSize(20, 20));
-    tools->setOrientation(Qt::Vertical);
-    tools->addActions(m_toolGroup->actions());
-    addToolBar(Qt::LeftToolBarArea, tools);
+    bar->addSeparator();
+    for (const char* id : {"undo", "redo"}) bar->addAction(m_actions.value(QString::fromLatin1(id)));
+    addToolBar(Qt::LeftToolBarArea, bar);
     m_viewMenu->addSeparator();
-    m_viewMenu->addAction(main->toggleViewAction());
-    m_viewMenu->addAction(tools->toggleViewAction());
+    m_viewMenu->addAction(bar->toggleViewAction());
 }
 
 // ---------------------------------------------------------------- files
@@ -543,9 +618,9 @@ bool MainWindow::openFile(const QString& path)
         setProject(p, native || suffix == QLatin1String("agr") ? path : QString());
         addRecent(path);
         if (!warnings.isEmpty())
-            statusBar()->showMessage(tr("Opened with %n unsupported statement(s) ignored", nullptr, warnings.size()), 8000);
+            flash(tr("Opened with %n unsupported statement(s) ignored", nullptr, warnings.size()), 8000);
         else
-            statusBar()->showMessage(tr("Opened %1").arg(QFileInfo(path).fileName()), 4000);
+            flash(tr("Opened %1").arg(QFileInfo(path).fileName()), 4000);
         return true;
     }
     ImportDialog d(m_doc, path, text, this);
@@ -578,7 +653,7 @@ bool MainWindow::save()
     }
     m_doc->markSaved();
     addRecent(m_doc->filePath());
-    statusBar()->showMessage(tr("Saved %1").arg(m_doc->filePath()), 4000);
+    flash(tr("Saved %1").arg(m_doc->filePath()), 4000);
     QFile::remove(autosavePath());
     return true;
 }
@@ -634,7 +709,7 @@ void MainWindow::importClipboard()
 void MainWindow::exportDialog()
 {
     ExportDialog d(m_doc, this);
-    if (d.exec() == QDialog::Accepted) statusBar()->showMessage(tr("Exported to %1").arg(QSettings().value(QStringLiteral("export/last")).toString()), 5000);
+    if (d.exec() == QDialog::Accepted) flash(tr("Exported to %1").arg(QSettings().value(QStringLiteral("export/last")).toString()), 5000);
 }
 
 void MainWindow::printPlot()
@@ -663,7 +738,7 @@ void MainWindow::copyImage(bool svg)
     const QImage img = renderToImage(m_doc->project(), int(m_doc->project().page.width * 300 / 72), false, 300);
     mime->setImageData(img);
     QApplication::clipboard()->setMimeData(mime);
-    statusBar()->showMessage(svg ? tr("Plot copied as SVG and image") : tr("Plot copied as image (300 dpi) and SVG"), 4000);
+    flash(svg ? tr("Plot copied as SVG and image") : tr("Plot copied as image (300 dpi) and SVG"), 4000);
 }
 
 void MainWindow::addGraph(bool inset)
@@ -709,18 +784,18 @@ void MainWindow::addGraph(bool inset)
 void MainWindow::applyPreset(const QString& name)
 {
     m_doc->modify(tr("Apply style %1").arg(name), [name](Project& p) { presets::applyToProject(p, name); });
-    statusBar()->showMessage(tr("Style “%1” applied").arg(name), 3000);
+    flash(tr("Style “%1” applied").arg(name), 3000);
 }
 
 void MainWindow::showContextMenu(const QPoint& pos)
 {
     const Selection sel = m_doc->selection();
     QMenu menu(this);
-    menu.addAction(icons::get(QStringLiteral("sliders")), tr("Properties"), this, [this] { raiseDock(m_inspectorDock); });
+    menu.addAction(icons::get(QStringLiteral("sliders")), tr("Properties"), this, [this] { showAppearance(); });
     if (sel.kind == Selection::Set) {
         menu.addAction(icons::get(QStringLiteral("table")), tr("Edit Data"), this, [this, sel] {
             m_sheet->showSet(sel.graph, sel.index);
-            raiseDock(m_sheetDock);
+            showWindow(m_sheetDock);
         });
         menu.addAction(icons::get(QStringLiteral("fit")), tr("Fit Curve..."), this, [this] { m_actions.value(QStringLiteral("fit"))->trigger(); });
         menu.addAction(icons::get(QStringLiteral("transform")), tr("Transform..."), this, [this] { m_actions.value(QStringLiteral("transform"))->trigger(); });
@@ -761,7 +836,7 @@ void MainWindow::autosave()
     QString err;
     if (projectio::saveAs(m_doc->project(), autosavePath(), projectio::Dialect::Native, &err)) {
         QSettings().setValue(QStringLiteral("autosave/original"), m_doc->filePath());
-        statusBar()->showMessage(tr("Autosaved"), 2000);
+        flash(tr("Autosaved"), 2000);
     }
 }
 
@@ -791,7 +866,9 @@ void MainWindow::closeEvent(QCloseEvent* e)
     }
     QSettings st;
     st.setValue(QStringLiteral("window/geometry"), saveGeometry());
-    st.setValue(QStringLiteral("window/state"), saveState());
+    st.setValue(QStringLiteral("window/state2"), saveState());
+    for (QDialog* d : {m_inspectorDock, m_treeDock, m_consoleDock, m_sheetDock})
+        st.setValue(QStringLiteral("windows/") + d->objectName(), d->saveGeometry());
     QFile::remove(autosavePath());
     e->accept();
 }

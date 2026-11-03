@@ -36,9 +36,10 @@ saves **Grace/xmgrace projects**, speaks the **Grace command language**, can be 
   elliptic, zeta, Voigt …), non-linear curve fitting (bounded Levenberg–Marquardt with live preview and
   model library), regressions, FFT, histograms, interpolation and splines, running statistics,
   integration/differentiation, correlation, convolution, digital filters, pruning, sorting, …
-- **Modern interface.** Live property inspector, full undo/redo, project tree, spreadsheet data editor,
-  command console, wheel zoom and drag-to-pan, point editing, drawing tools, light/dark themes,
-  drag-and-drop, copy plot to clipboard (PNG + SVG), autosave and crash recovery.
+- **Grace's personality, modern finish.** The main window is just the plot, a menu bar and a slim
+  button column. Appearance, the set editor (spreadsheet) and the command window open as separate
+  windows when you need them, as in xmgrace. Full undo/redo, wheel zoom and drag-to-pan, point
+  editing, drawing tools, light/dark themes, drag-and-drop, copy to clipboard (PNG + SVG), autosave.
 - **Exports.** PDF, SVG, EPS/PostScript (tight bounding boxes for LaTeX), PNG, JPEG, TIFF, BMP, PPM, WebP.
 - **Lightweight.** C++20 and Qt 6 widgets only; the Linux package is ~2 MB.
 
@@ -108,9 +109,12 @@ cactusplot old-figure.agr                   # Grace projects open with full fide
 cactusplot --style Publication figure.agr   # ... or restyled
 ```
 
-In the window: **click** anything to edit it in the inspector, **scroll** to zoom the graph under the
-cursor, **drag** to pan, **double-click** for properties, press **Ctrl+F** to fit a curve, **Ctrl+T** for
-transformations and **Ctrl+K** for the command console. See the [manual](docs/manual.md).
+In the window: **double-click** anything to change its appearance, **scroll** to zoom the graph under
+the cursor, **drag** to pan, **Ctrl+D** opens the set editor, **Ctrl+F** fits a curve, **Ctrl+T** opens
+transformations and **Ctrl+K** the command window. See the [manual](docs/manual.md).
+
+<p align="center"><img src="docs/images/screenshot-dark.png" width="700" alt="Dark theme"/>
+<img src="docs/images/appearance.png" width="200" alt="Appearance window"/></p>
 
 ### Batch mode (gracebat compatible)
 

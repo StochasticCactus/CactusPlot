@@ -11,7 +11,7 @@ class QLabel;
 class QActionGroup;
 class QMenu;
 class QTimer;
-class QDockWidget;
+class QDialog;
 
 namespace cactus::ui {
 
@@ -30,6 +30,8 @@ public:
     bool openFile(const QString& path);
     void setProject(const Project& p, const QString& path);
     void checkAutosaveRecovery();
+    /// Open a secondary window by name (appearance, seteditor, commands, explorer); returns it.
+    QWidget* openWindow(const QString& which);
 
 protected:
     void closeEvent(QCloseEvent* e) override;
@@ -59,7 +61,10 @@ private:
     void showCommandReference();
     void showShortcuts();
     void about();
-    void raiseDock(QDockWidget* d);
+    void showWindow(QDialog* w);
+    QDialog* makeToolWindow(const QString& title, QWidget* content, const QString& name, const QSize& size);
+    void showAppearance(int kind = -1);
+    void flash(const QString& msg, int ms = 4000);
     void applyTheme();
     QString autosavePath() const;
 
@@ -69,12 +74,13 @@ private:
     ProjectTree* m_tree;
     Console* m_console;
     DataSheet* m_sheet;
-    QDockWidget* m_inspectorDock;
-    QDockWidget* m_treeDock;
-    QDockWidget* m_consoleDock;
-    QDockWidget* m_sheetDock;
+    QDialog* m_inspectorDock;
+    QDialog* m_treeDock;
+    QDialog* m_consoleDock;
+    QDialog* m_sheetDock;
     QLabel* m_locator;
     QLabel* m_zoomLabel;
+    QTimer* m_flashTimer = nullptr;
     QMenu* m_recentMenu = nullptr;
     QMenu* m_viewMenu = nullptr;
     QActionGroup* m_toolGroup = nullptr;

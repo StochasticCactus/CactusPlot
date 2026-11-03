@@ -87,7 +87,7 @@ void Document::setProject(const Project& p, const QString& path)
     m_undo.clear();
     m_undo.setClean();
     m_path = path;
-    m_sel = Selection{Selection::Graph, m_project.currentGraph, -1};
+    m_sel = Selection{};  // nothing selected: no markers over a freshly opened plot
     emit filePathChanged();
     emit structureChanged();
     emit changed();

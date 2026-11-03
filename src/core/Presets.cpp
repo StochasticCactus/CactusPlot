@@ -72,7 +72,7 @@ Spec spec(const QString& name)
         s.page = QColor(30, 31, 38);
         s.gridColor = QColor(58, 60, 72);
         s.legendFill = QColor(40, 42, 52, 220);
-        s.palette = QStringLiteral("Tol Vibrant");
+        s.palette = QStringLiteral("CactusPlot Dark");
     } else if (n == QLatin1String("minimal")) {
         s.grid = false;
         s.frame = FrameType::HalfOpen;

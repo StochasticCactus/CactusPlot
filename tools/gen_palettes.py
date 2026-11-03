@@ -83,6 +83,8 @@ def hexlist(s):
 
 qual.append(("CactusPlot Modern", "CactusPlot", hexlist(
     "#0072B2 #D55E00 #009E73 #CC79A7 #E69F00 #56B4E9 #8C564B #F0E442 #7F7F7F #000000")))
+qual.append(("CactusPlot Dark", "CactusPlot", hexlist(
+    "#56B4E9 #FF9F43 #2ED8A3 #FF6B9A #F9D65C #B39DFF #FF6F5E #9AD0F5 #C9C9C9")))
 qual.append(("Okabe-Ito", "Colour-blind safe", hexlist(
     "#E69F00 #56B4E9 #009E73 #F0E442 #0072B2 #D55E00 #CC79A7 #000000")))
 qual.append(("Tol Bright", "Colour-blind safe", hexlist("#4477AA #EE6677 #228833 #CCBB44 #66CCEE #AA3377 #BBBBBB")))

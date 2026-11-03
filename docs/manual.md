@@ -28,14 +28,20 @@ the page size too, so a figure scales consistently when the page size changes.
 
 ## 2. The window
 
-- **Plot canvas** (centre). Click an element to select it; the inspector shows its properties.
-- **Project** tree (left). Lists graphs, axes, legends, sets and annotations. Tick boxes show and hide
-  them. Double-click a set to edit its data. Right-click for more actions.
-- **Properties** inspector (right). Every change applies immediately and can be undone with **Ctrl+Z**.
-- **Data** sheet (bottom). Spreadsheet view of the selected set. Edit cells, add or delete rows, and copy
-  or paste blocks to and from other programs.
-- **Console** (bottom tab). Runs Grace commands and expressions (see section 6).
-- **Tools** (left toolbar). The table below lists them.
+The main window stays out of the way, in the spirit of xmgrace: the menu bar, a slim column of
+buttons on the left, the coordinate locator in the top-right corner, and the plot. Everything else
+opens in its own window when you need it.
+
+- **Appearance** (*Window ▸ Appearance*, Ctrl+Shift+P). Edits the properties of the selected element
+  live. Every change can be undone with **Ctrl+Z**. Double-click any element of the plot to open it
+  there. The Grace-style entries *Plot ▸ Plot / Graph / Set Appearance* and *Axis Properties* open the
+  same window for that element.
+- **Set Editor** (*Data ▸ Edit Set*, Ctrl+D). A spreadsheet view of a set, for those who want one.
+  Edit cells, add or delete rows, and copy or paste blocks to and from other programs.
+- **Commands** (*Window ▸ Commands*, Ctrl+K). Runs Grace commands and expressions (see section 6).
+- **Explorer** (*Window ▸ Explorer*). An overview of graphs, sets and annotations. Its tick boxes show
+  and hide them.
+- **Buttons** on the left. The table below lists them.
 
 | Tool | Key | Use |
 |---|---|---|
