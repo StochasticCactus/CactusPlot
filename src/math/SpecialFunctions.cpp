@@ -180,7 +180,7 @@ double psi(double x)
     if (x <= 0 && isInteger(x)) return kNaN;
     if (x < 0) return psi(1.0 - x) - M_PI / std::tan(M_PI * x);
     double r = 0.0;
-    while (x < 6.0) {
+    while (x < 12.0) {
         r -= 1.0 / x;
         x += 1.0;
     }

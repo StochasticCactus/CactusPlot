@@ -22,9 +22,10 @@ namespace cactus::exporter {
 QStringList formats()
 {
     QStringList l{QStringLiteral("pdf"), QStringLiteral("svg"), QStringLiteral("eps"), QStringLiteral("ps"),
-                  QStringLiteral("png"), QStringLiteral("jpeg"), QStringLiteral("tiff"), QStringLiteral("bmp"),
-                  QStringLiteral("ppm")};
-    if (QImageWriter::supportedImageFormats().contains("webp")) l << QStringLiteral("webp");
+                  QStringLiteral("png"), QStringLiteral("jpeg"), QStringLiteral("bmp"), QStringLiteral("ppm")};
+    const auto supported = QImageWriter::supportedImageFormats();
+    if (supported.contains("tiff")) l << QStringLiteral("tiff");
+    if (supported.contains("webp")) l << QStringLiteral("webp");
     return l;
 }
 
@@ -34,8 +35,8 @@ QString fileFilter()
     f << QStringLiteral("PDF document (*.pdf)") << QStringLiteral("SVG image (*.svg)")
       << QStringLiteral("Encapsulated PostScript (*.eps)") << QStringLiteral("PostScript (*.ps)")
       << QStringLiteral("PNG image (*.png)") << QStringLiteral("JPEG image (*.jpg *.jpeg)")
-      << QStringLiteral("TIFF image (*.tif *.tiff)") << QStringLiteral("BMP image (*.bmp)")
-      << QStringLiteral("Portable pixmap (*.ppm *.pnm)");
+      << QStringLiteral("BMP image (*.bmp)") << QStringLiteral("Portable pixmap (*.ppm *.pnm)");
+    if (formats().contains(QStringLiteral("tiff"))) f << QStringLiteral("TIFF image (*.tif *.tiff)");
     if (formats().contains(QStringLiteral("webp"))) f << QStringLiteral("WebP image (*.webp)");
     return f.join(QStringLiteral(";;"));
 }
