@@ -1,0 +1,17 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/fonts">
+        <file alias="texgyreheros-regular.otf">fonts/texgyreheros-regular.otf</file>
+        <file alias="texgyreheros-bold.otf">fonts/texgyreheros-bold.otf</file>
+        <file alias="texgyreheros-italic.otf">fonts/texgyreheros-italic.otf</file>
+        <file alias="texgyreheros-bolditalic.otf">fonts/texgyreheros-bolditalic.otf</file>
+        <file alias="texgyretermes-regular.otf">fonts/texgyretermes-regular.otf</file>
+        <file alias="texgyretermes-bold.otf">fonts/texgyretermes-bold.otf</file>
+        <file alias="texgyretermes-italic.otf">fonts/texgyretermes-italic.otf</file>
+        <file alias="texgyretermes-bolditalic.otf">fonts/texgyretermes-bolditalic.otf</file>
+        <file alias="texgyrecursor-regular.otf">fonts/texgyrecursor-regular.otf</file>
+        <file alias="texgyrecursor-bold.otf">fonts/texgyrecursor-bold.otf</file>
+        <file alias="texgyrecursor-italic.otf">fonts/texgyrecursor-italic.otf</file>
+        <file alias="texgyrecursor-bolditalic.otf">fonts/texgyrecursor-bolditalic.otf</file>
+    </qresource>
+</RCC>
