@@ -8,6 +8,10 @@ endfunction()
 
 cactus_add_test(test_math)
 cactus_add_test(test_grace)
+if(CACTUS_BUILD_GUI)
+    cactus_add_test(test_gui)
+    target_link_libraries(test_gui PRIVATE cactusui)
+endif()
 
 # Renders the same data with every style preset (used for visual review)
 add_executable(cactus-gallery gallery.cpp)

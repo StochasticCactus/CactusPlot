@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#22c3a6"/>
+      <stop offset="1" stop-color="#0b5f63"/>
+    </linearGradient>
+    <linearGradient id="cactus" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f4fff9"/>
+      <stop offset="1" stop-color="#c9f5e4"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#bg)"/>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M104 92 V404 H420" stroke="#ffffff" stroke-opacity="0.85" stroke-width="20"/>
+    <path d="M150 360 C 210 330, 230 250, 268 236 S 350 214, 392 130" stroke="#ffd166" stroke-width="16" stroke-opacity="0.95"/>
+    <path d="M262 392 V170" stroke="url(#cactus)" stroke-width="58"/>
+    <path d="M262 318 H206 V246" stroke="url(#cactus)" stroke-width="40"/>
+    <path d="M262 276 H322 V204" stroke="url(#cactus)" stroke-width="40"/>
+  </g>
+  <circle cx="262" cy="140" r="22" fill="#ff7a59"/>
+  <circle cx="150" cy="360" r="13" fill="#ffd166"/>
+  <circle cx="392" cy="130" r="13" fill="#ffd166"/>
+</svg>
