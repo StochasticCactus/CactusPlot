@@ -33,6 +33,12 @@
       <key>LSItemContentTypes</key><array><string>org.plasma-gate.grace.project</string></array>
     </dict>
     <dict>
+      <key>CFBundleTypeName</key><string>XVG Data</string>
+      <key>CFBundleTypeRole</key><string>Viewer</string>
+      <key>LSHandlerRank</key><string>Default</string>
+      <key>LSItemContentTypes</key><array><string>org.gromacs.xvg</string></array>
+    </dict>
+    <dict>
       <key>CFBundleTypeName</key><string>Data</string>
       <key>CFBundleTypeRole</key><string>Viewer</string>
       <key>LSHandlerRank</key><string>Alternate</string>
@@ -55,6 +61,12 @@
       <key>UTTypeDescription</key><string>Grace Project</string>
       <key>UTTypeConformsTo</key><array><string>public.plain-text</string></array>
       <key>UTTypeTagSpecification</key><dict><key>public.filename-extension</key><array><string>agr</string><string>xvgr</string></array></dict>
+    </dict>
+    <dict>
+      <key>UTTypeIdentifier</key><string>org.gromacs.xvg</string>
+      <key>UTTypeDescription</key><string>XVG Data</string>
+      <key>UTTypeConformsTo</key><array><string>public.plain-text</string></array>
+      <key>UTTypeTagSpecification</key><dict><key>public.filename-extension</key><array><string>xvg</string></array></dict>
     </dict>
   </array>
 </dict>

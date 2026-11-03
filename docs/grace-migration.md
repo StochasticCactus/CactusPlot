@@ -7,6 +7,7 @@ CactusPlot was designed so that Grace users can switch without converting anythi
 | Grace | CactusPlot |
 |---|---|
 | `xmgrace file.agr` | `cactusplot file.agr` (also `.xvgr`, `.par` and xmgr/ACE files) |
+| `xmgrace rmsd.xvg` (GROMACS output) | `cactusplot rmsd.xvg`, or double-click/drag the file. Titles, labels and legends are kept, `@TYPE xydy` shows error bars, and each column becomes a set without `-nxy`. In the modern styles the xmgrace page layout in the file (`view`, legend position) is replaced by the automatic one; the Grace Classic style keeps it |
 | `gracebat -hardcopy ...` | `cactusbat ...` or `cactusplot -hardcopy ...` (no display needed) |
 | `-nxy`, `-block`/`-bxy`, `-settype`, `-batch`, `-param`, `-pexec`, `-pipe`, `-hdevice`, `-printfile`, `-saveall`, `-world`, `-viewport`, `-log`, `-autoscale`, `-graph`, `-legend load`, `-rvideo`, ... | same options, processed in the same order |
 | Batch/parameter files and the command language | same syntax, including expressions, `nonlfit`, `runavg`, `interpolate`, `histogram`, `restrict`, `arrange`, `read block`, `write` |

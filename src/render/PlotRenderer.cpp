@@ -1416,13 +1416,16 @@ void PlotRenderer::drawLegend(QPainter* p, int gi, const Graph& g, const GraphGe
 
     QPointF tl;
     if (L.autoPlace && g.type != GraphType::Pie) {
-        // choose the corner covering the fewest data points
+        // choose the position covering the fewest data points: the corners first, then the
+        // middles of the edges (ties keep the earlier candidate)
         const QRectF v = geo.view;
         const double inset = 0.015 * m_unit;
-        const QVector<QPointF> cands = {QPointF(v.right() - inset - boxSize.width(), v.top() + inset),
-                                        QPointF(v.left() + inset, v.top() + inset),
-                                        QPointF(v.right() - inset - boxSize.width(), v.bottom() - inset - boxSize.height()),
-                                        QPointF(v.left() + inset, v.bottom() - inset - boxSize.height())};
+        const double right = v.right() - inset - boxSize.width(), left = v.left() + inset;
+        const double top = v.top() + inset, bottom = v.bottom() - inset - boxSize.height();
+        const double midX = v.center().x() - boxSize.width() / 2, midY = v.center().y() - boxSize.height() / 2;
+        const QVector<QPointF> cands = {QPointF(right, top),    QPointF(left, top),  QPointF(right, bottom),
+                                        QPointF(left, bottom),  QPointF(right, midY), QPointF(left, midY),
+                                        QPointF(midX, top),     QPointF(midX, bottom)};
         int best = 0;
         long bestCount = -1;
         for (int c = 0; c < cands.size(); ++c) {

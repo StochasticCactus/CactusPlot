@@ -108,6 +108,7 @@ private:
     QCheckBox* m_autoscale;
     QCheckBox* m_legends;
     QLabel* m_summary;
+    int m_fileType = -1;  ///< set type named by an "@TYPE" line in the file, -1 if none
 };
 
 // ---------------------------------------------------------------- export

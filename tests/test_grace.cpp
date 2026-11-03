@@ -242,6 +242,68 @@ private slots:
         QCOMPARE(s->cols[1], (QVector<double>{3, 7}));
     }
 
+    void gromacsXvg()
+    {
+        // GROMACS writes Grace commands into its .xvg data files
+        const QString hdr = QStringLiteral("# This file was created by GROMACS\n# gmx analyze\n"
+                                           "@    title \"Average\"\n@    xaxis  label \"Time (ns)\"\n");
+        Project p = presets::newProject();
+        Interpreter in(&p);
+        QVERIFY(in.readDataText(hdr + QStringLiteral("@TYPE xydy\n0 1.0 0.1\n1 2.0 0.2\n2 3.0 0.3\n"), Interpreter::ReadMode::Single,
+                                SetType::XY, 0, QStringLiteral("average.xvg")));
+        QCOMPARE(p.graph(0)->activeSetCount(), 1);
+        const DataSet& avg = p.graphs[0].sets[0];
+        QCOMPARE(avg.type, SetType::XYDY);  // error bars by default
+        QCOMPARE(avg.cols[2], (QVector<double>{0.1, 0.2, 0.3}));
+        QCOMPARE(p.graphs[0].title.text, QStringLiteral("Average"));
+        QCOMPARE(p.graphs[0].axes[Graph::X].label, QStringLiteral("Time (ns)"));
+
+        // several columns: one set each, with the file's legends; set numbers in the file are
+        // relative to the sets it creates, and the xmgrace page layout is left to the modern style
+        const double viewBefore = p.graphs[0].vxmin;
+        const QString energy = hdr + QStringLiteral("@TYPE xy\n@ view 0.15, 0.15, 0.75, 0.85\n@ legend loctype view\n@ legend 0.78, 0.8\n"
+                                                    "@ s0 legend \"Bond\"\n@ s1 legend \"Angle\"\n0 5 7\n1 6 8\n");
+        QVERIFY(in.readDataText(energy, Interpreter::ReadMode::Single, SetType::XY, 0, QStringLiteral("energy.xvg")));
+        QCOMPARE(p.graph(0)->activeSetCount(), 3);
+        QCOMPARE(p.graphs[0].sets[0].legend, QString());
+        QCOMPARE(p.graphs[0].sets[1].legend, QStringLiteral("Bond"));
+        QCOMPARE(p.graphs[0].sets[2].legend, QStringLiteral("Angle"));
+        QCOMPARE(p.graphs[0].sets[2].cols[1], (QVector<double>{7, 8}));
+        QCOMPARE(p.graphs[0].sets[2].type, SetType::XY);
+        QCOMPARE(p.graphs[0].vxmin, viewBefore);
+        QVERIFY(p.graphs[0].legend.autoPlace);
+
+        // X Y1 dY1 Y2 dY2: two sets with error bars
+        Project q = presets::newProject();
+        Interpreter iq(&q);
+        QVERIFY(iq.readDataText(QStringLiteral("@TYPE xydy\n0 1 .1 5 .5\n1 2 .2 6 .6\n"), Interpreter::ReadMode::Single, SetType::XY, 0,
+                                QStringLiteral("two.xvg")));
+        QCOMPARE(q.graph(0)->activeSetCount(), 2);
+        QCOMPARE(q.graphs[0].sets[1].type, SetType::XYDY);
+        QCOMPARE(q.graphs[0].sets[1].cols[2], (QVector<double>{.5, .6}));
+        // the TYPE line does not leak into the next file
+        QVERIFY(iq.readDataText(QStringLiteral("0 1 2\n1 2 3\n"), Interpreter::ReadMode::Single, SetType::XY, 0, QStringLiteral("plain.dat")));
+        QCOMPARE(q.graphs[0].sets[2].type, SetType::XY);
+
+        // the Grace look keeps the GROMACS layout, as xmgrace shows it
+        Project r = presets::newProject(QStringLiteral("Grace Classic"));
+        Interpreter ir(&r);
+        QVERIFY(ir.readDataText(energy, Interpreter::ReadMode::Single, SetType::XY, 0, QStringLiteral("energy.xvg")));
+        QVERIFY(std::fabs(r.graphs[0].vxmin - 0.15) < 1e-9);
+        QVERIFY(!r.graphs[0].legend.autoPlace);
+
+        // -nxy fills the sets the file named
+        Project n = presets::newProject();
+        Interpreter in2(&n);
+        QVERIFY(in2.readDataText(energy, Interpreter::ReadMode::NXY, SetType::XY, 0, QStringLiteral("energy.xvg")));
+        QCOMPARE(n.graph(0)->activeSetCount(), 2);
+        QCOMPARE(n.graphs[0].sets[1].legend, QStringLiteral("Angle"));
+        QCOMPARE(n.graphs[0].sets[1].cols[1], (QVector<double>{7, 8}));
+
+        QVERIFY(datareader::hasGraceCommands(energy));
+        QVERIFY(!datareader::hasGraceCommands(QStringLiteral("# x y\n1 2\n")));
+    }
+
     void exports()
     {
         Project p = presets::newProject();

@@ -50,6 +50,7 @@ if(WIN32)
         WriteRegStr HKCR 'CactusPlot.Project\\\\DefaultIcon' '' '$INSTDIR\\\\bin\\\\cactusplot.exe,0'
         WriteRegStr HKCR 'CactusPlot.Project\\\\shell\\\\open\\\\command' '' '\\\"$INSTDIR\\\\bin\\\\cactusplot.exe\\\" \\\"%1\\\"'
         WriteRegStr HKCR '.agr\\\\OpenWithProgids' 'CactusPlot.Project' ''
+        WriteRegStr HKCR '.xvg\\\\OpenWithProgids' 'CactusPlot.Project' ''
     ")
     set(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS "
         DeleteRegKey HKCR 'CactusPlot.Project'

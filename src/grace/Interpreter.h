@@ -61,6 +61,9 @@ public:
     bool safeMode = true;
     QString workingDir;
     int autoscaleOnRead = 3;  ///< 0 none, 1 x, 2 y, 3 xy
+    /// A "@TYPE xydy" line inside a data file (as in GROMACS .xvg output) overrides the
+    /// set type passed to readDataText(), and extra columns become extra sets of that type.
+    bool fileTypeOverrides = true;
     double referenceDateHint = 0.0;
 
     QStringList errors() const { return m_errors; }
@@ -139,6 +142,7 @@ private:
     QStringList m_rowStrings;
     bool m_implicitType = true;
     SetType m_nextSetType = SetType::XY;
+    bool m_typeSeen = false;  ///< a TYPE statement without a target was executed
 
     // pending drawing object ("with string" ... "string def")
     bool m_haveObject = false;

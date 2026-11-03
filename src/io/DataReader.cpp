@@ -103,6 +103,20 @@ bool parseLine(const QString& rawLine, QVector<double>* values, QString* label, 
     return !values->isEmpty();
 }
 
+bool hasGraceCommands(const QString& text)
+{
+    // only the head of the file is checked: the commands come before the data
+    qsizetype pos = 0;
+    for (int lines = 0; lines < 400 && pos < text.size(); ++lines) {
+        qsizetype end = text.indexOf(QLatin1Char('\n'), pos);
+        if (end < 0) end = text.size();
+        const QStringView t = QStringView(text).mid(pos, end - pos).trimmed();
+        if (t.size() > 1 && t[0] == QLatin1Char('@') && (t[1].isLetter() || t[1].isSpace())) return true;
+        pos = end + 1;
+    }
+    return false;
+}
+
 bool looksLikeData(const QString& line)
 {
     const QString t = line.trimmed();

@@ -839,6 +839,20 @@ ImportDialog::ImportDialog(Document* doc, const QString& path, const QString& te
     connect(bb, &QDialogButtonBox::accepted, this, &ImportDialog::accept);
     connect(bb, &QDialogButtonBox::rejected, this, &QDialog::reject);
     connect(m_mode, &QComboBox::currentIndexChanged, this, &ImportDialog::reparse);
+    // a set type declared in the file ("@TYPE xydy" in GROMACS .xvg files) is the default
+    QStringList commands;
+    const auto tables = datareader::parseText(m_text, &commands, doc->project().referenceDate);
+    static const QRegularExpression typeRe(QStringLiteral("^\\s*type\\s+(\\w+)"), QRegularExpression::CaseInsensitiveOption);
+    for (const QString& c : commands) {
+        SetType t;
+        const auto m = typeRe.match(c);
+        if (m.hasMatch() && parseSetType(m.captured(1).toLower(), &t)) m_fileType = int(t);
+    }
+    if (m_fileType >= 0) {
+        const int cols = tables.isEmpty() ? 0 : tables[0].columns();
+        if (SetType(m_fileType) == SetType::XY && cols > 2) m_mode->setCurrentIndex(1);
+        m_type->setCurrentIndex(m_fileType);
+    }
     reparse();
 }
 
@@ -855,7 +869,7 @@ void ImportDialog::reparse()
     m_summary->setText(tr("%n block(s), ", nullptr, tables.size()) + tr("%1 rows, %2 columns.").arg(rows).arg(cols) + headers);
     m_columns->setEnabled(m_mode->currentIndex() == 2);
     m_type->setEnabled(m_mode->currentIndex() != 1);
-    if (cols >= 3 && m_mode->currentIndex() == 0 && m_type->currentIndex() == 0 && cols == 3) {
+    if (m_fileType < 0 && m_mode->currentIndex() == 0 && m_type->currentIndex() == 0 && cols == 3) {
         // three columns: a common case is X Y dY
         m_type->setCurrentIndex(int(SetType::XYDY));
     }
@@ -893,6 +907,8 @@ void ImportDialog::accept()
         Interpreter in(&p);
         in.autoscaleOnRead = 0;
         in.setCurrentGraph(gi);
+        // the file's own type (and its several column groups) only applies if it was kept
+        in.fileTypeOverrides = mode == 0 && int(type) == m_fileType;
         if (mode == 2) {
             in.readDataText(m_text, Interpreter::ReadMode::Block, type, gi, name);
             in.formBlockSet(type, cols, gi);

@@ -105,6 +105,7 @@ line:
 cactusplot data.dat                         # one set per data block
 cactusplot -nxy spectra.dat                 # X Y1 Y2 ... -> one set per column
 cactusplot -settype xydy errors.dat         # X Y dY
+cactusplot rmsd.xvg                         # GROMACS .xvg: labels, legends, error bars
 cactusplot old-figure.agr                   # Grace projects open with full fidelity
 cactusplot --style Publication figure.agr   # ... or restyled
 ```

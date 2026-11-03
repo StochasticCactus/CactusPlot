@@ -4,6 +4,7 @@
 #include <QComboBox>
 #include <QListWidget>
 #include <QPushButton>
+#include <QTemporaryDir>
 #include <QWheelEvent>
 #include <cmath>
 
@@ -124,6 +125,28 @@ private slots:
         QMetaObject::invokeMethod(&d, "accept");
         QCOMPARE(doc.project().graphs[0].activeSetCount(), 2);
         QCOMPARE(doc.project().graphs[0].sets[1].cols[1][2], 27.0);
+    }
+
+    void openXvgWithErrorBars()
+    {
+        QTemporaryDir dir;
+        const QString path = dir.filePath(QStringLiteral("average.xvg"));
+        QFile f(path);
+        QVERIFY(f.open(QIODevice::WriteOnly));
+        f.write("# GROMACS\n@    title \"Average\"\n@TYPE xydy\n0 1 0.1\n1 2 0.2\n2 3 0.3\n");
+        f.close();
+        MainWindow w;
+        w.setProject(presets::newProject(), QString());
+        QVERIFY(w.openFile(path));  // no import dialog
+        const Graph& g = w.document()->project().graphs[0];
+        QCOMPARE(g.activeSetCount(), 1);
+        QCOMPARE(g.sets[0].type, SetType::XYDY);
+        QCOMPARE(g.title.text, QStringLiteral("Average"));
+        // File > Import offers the file's type too
+        QFile in(path);
+        QVERIFY(in.open(QIODevice::ReadOnly));
+        ImportDialog d(w.document(), path, QString::fromUtf8(in.readAll()));
+        QCOMPARE(d.findChildren<QComboBox*>().value(1)->currentIndex(), int(SetType::XYDY));
     }
 
     void inspectorBuilds()

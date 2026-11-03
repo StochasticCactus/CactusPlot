@@ -33,6 +33,7 @@
 #include "Version.h"
 #include "core/Presets.h"
 #include "core/color/Colors.h"
+#include "grace/Interpreter.h"
 #include "grace/ProjectIO.h"
 #include "io/DataReader.h"
 #include "render/Export.h"
@@ -623,6 +624,38 @@ bool MainWindow::openFile(const QString& path)
             flash(tr("Opened %1").arg(QFileInfo(path).fileName()), 4000);
         return true;
     }
+    // Data files that carry their own Grace commands (GROMACS .xvg output: titles, axis labels,
+    // legends, "@TYPE xydy") are read directly, as xmgrace does, so error bars and labels come along.
+    if (suffix == QLatin1String("xvg") || datareader::hasGraceCommands(text)) {
+        const QString name = QFileInfo(path).fileName();
+        QStringList errs;
+        int gi = std::max(0, m_doc->currentGraph());
+        m_doc->modify(tr("Open %1").arg(name), [&](Project& p) {
+            if (!p.graph(gi) || !p.graph(gi)->active) {
+                Graph& g = p.ensureGraph(gi);
+                g.active = true;
+                presets::styleGraph(g, p.stylePreset);
+            }
+            Interpreter in(&p);
+            in.autoscaleOnRead = 0;
+            in.setCurrentGraph(gi);
+            in.readDataText(text, Interpreter::ReadMode::Single, SetType::XY, gi, name);
+            errs = in.errors();
+            Graph& g = p.graphs[gi];
+            // several curves on one graph: name unlabelled ones after their file
+            int shown = 0;
+            for (const DataSet& d : g.sets) if (d.active && d.size() > 0) ++shown;
+            if (shown > 1)
+                for (DataSet& d : g.sets)
+                    if (d.active && d.legend.isEmpty() && !d.comment.isEmpty()) d.legend = QFileInfo(d.comment).completeBaseName();
+            g.autoscale();
+        });
+        m_doc->setCurrentGraph(gi);
+        addRecent(path);
+        if (!errs.isEmpty()) flash(tr("Opened %1 with %n unsupported statement(s) ignored", nullptr, errs.size()).arg(name), 8000);
+        else flash(tr("Opened %1").arg(name), 4000);
+        return true;
+    }
     ImportDialog d(m_doc, path, text, this);
     if (d.exec() == QDialog::Accepted) {
         addRecent(path);
@@ -635,8 +668,9 @@ void MainWindow::openDialog()
 {
     const QString dir = QSettings().value(QStringLiteral("files/dir"), QDir::homePath()).toString();
     const QString f = QFileDialog::getOpenFileName(this, tr("Open project or data"), dir,
-                                                   tr("All supported (*.cplot *.agr *.xvgr *.par *.dat *.txt *.csv *.tsv *.xy *.nxy);;"
+                                                   tr("All supported (*.cplot *.agr *.xvgr *.par *.xvg *.dat *.txt *.csv *.tsv *.xy *.nxy);;"
                                                       "CactusPlot projects (*.cplot);;Grace projects (*.agr *.xvgr *.par);;"
+                                                      "GROMACS / Grace data (*.xvg);;"
                                                       "Data files (*.dat *.txt *.csv *.tsv *.xy *.nxy);;All files (*)"));
     if (f.isEmpty()) return;
     QSettings().setValue(QStringLiteral("files/dir"), QFileInfo(f).absolutePath());
@@ -682,7 +716,7 @@ void MainWindow::importDialog()
 {
     const QString dir = QSettings().value(QStringLiteral("files/dir"), QDir::homePath()).toString();
     const QStringList files = QFileDialog::getOpenFileNames(this, tr("Import data"), dir,
-                                                            tr("Data files (*.dat *.txt *.csv *.tsv *.xy *.nxy *.out);;All files (*)"));
+                                                            tr("Data files (*.dat *.txt *.csv *.tsv *.xy *.nxy *.out *.xvg);;All files (*)"));
     for (const QString& f : files) {
         QString text, err;
         if (!datareader::readFile(f, &text, &err)) {

@@ -13,4 +13,6 @@
 - Curve fitting with live preview, regressions, FFT, histograms, interpolation, running statistics
   and other transformations.
 - Exports to PDF, SVG, EPS/PS, PNG, JPEG, TIFF, BMP, PPM and WebP.
+- Opens GROMACS `.xvg` files directly: titles, axis labels and legends come along, `@TYPE xydy`
+  gives error bars, and every column becomes its own set (no `-nxy` needed).
 - Undo/redo, live inspector, data sheet, command console, drawing tools, regions, themes, autosave.

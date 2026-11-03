@@ -12,6 +12,6 @@ Icon=org.cactusplot.CactusPlot
 Terminal=false
 Categories=Science;Math;DataVisualization;Education;Qt;
 Keywords=plot;graph;chart;xmgrace;grace;xmgr;fit;data;science;
-MimeType=application/x-cactusplot;application/x-grace;text/csv;text/tab-separated-values;
+MimeType=application/x-cactusplot;application/x-grace;application/x-xvg;text/csv;text/tab-separated-values;
 StartupNotify=true
 StartupWMClass=cactusplot

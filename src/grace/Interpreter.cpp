@@ -932,7 +932,10 @@ bool Interpreter::dispatch(Cursor& c)
         const QString what = c.word();
         if (parseSetType(what, &st)) {
             if (m_haveTarget) m_blockType = st;
-            else m_nextSetType = st;
+            else {
+                m_nextSetType = st;
+                m_typeSeen = true;
+            }
             ++c.i;
             return true;
         }
@@ -2072,7 +2075,39 @@ bool Interpreter::readDataText(const QString& text, ReadMode mode, SetType type,
     graph();
     QStringList commands;
     const QVector<DataTable> tables = datareader::parseText(text, &commands, m_p->referenceDate);
-    for (const QString& cmd : commands) execute(cmd);
+    // Set numbers in a data file (e.g. GROMACS '@ s1 legend "Angle"') refer to the sets that file
+    // creates; shift them past the sets already holding data so the file can be added to a graph.
+    int base = 0;
+    {
+        const Graph& g = m_p->graphs[gi];
+        for (int i = 0; i < g.sets.size(); ++i)
+            if (g.sets[i].active && g.sets[i].size() > 0) base = i + 1;
+    }
+    // GROMACS files carry an xmgrace page layout (view, legend placement); in the modern styles
+    // the automatic layout looks better, so that is kept unless the Grace look is in use.
+    const bool gromacs = sourceName.endsWith(QLatin1String(".xvg"), Qt::CaseInsensitive) ||
+                         text.left(2048).contains(QLatin1String("GROMACS"));
+    const bool keepLayout = !gromacs || m_p->stylePreset == QLatin1String("Grace Classic");
+    static const QRegularExpression setNumRe(QStringLiteral("^\\s*s(\\d+)\\b"), QRegularExpression::CaseInsensitiveOption);
+    static const QRegularExpression layoutRe(
+        QStringLiteral("^\\s*(view\\b|legend\\s+(loctype|box|length|vgap|hgap|char|font|color|[-+.0-9]))"),
+        QRegularExpression::CaseInsensitiveOption);
+    m_typeSeen = false;
+    for (QString cmd : commands) {
+        if (!keepLayout && layoutRe.match(cmd).hasMatch()) continue;
+        if (base > 0) {
+            const auto m = setNumRe.match(cmd);
+            if (m.hasMatch()) cmd.replace(m.capturedStart(1), m.capturedLength(1), QString::number(m.captured(1).toInt() + base));
+        }
+        execute(cmd);
+    }
+    const bool fileTyped = m_typeSeen && fileTypeOverrides && mode == ReadMode::Single;
+    if (fileTyped) type = m_nextSetType;
+    if (m_typeSeen) {
+        // TYPE applies to this file only
+        m_nextSetType = SetType::XY;
+        m_typeSeen = false;
+    }
     int created = 0;
     for (const DataTable& t : tables) {
         if (mode == ReadMode::Block) {
@@ -2082,34 +2117,57 @@ bool Interpreter::readDataText(const QString& text, ReadMode mode, SetType type,
         }
         if (mode == ReadMode::NXY) {
             for (int c = 1; c < t.columns(); ++c) {
-                const int si = newSet(gi, t.cols[0], t.cols[c], sourceName);
-                DataSet& s = m_p->graphs[gi].sets[si];
-                if (t.headers.size() == t.columns()) s.legend = t.headers[c];
+                // fill sets the file's own commands prepared (e.g. '@ s1 legend ...') first
+                Graph& g = m_p->graphs[gi];
+                const int si = g.nextEmptySet();
+                const bool existed = g.set(si) != nullptr;
+                DataSet& s = g.ensureSet(si);
+                if (!existed) presets::styleSet(s, si, m_p->stylePreset);
+                s.active = true;
+                s.type = SetType::XY;
+                s.cols[0] = t.cols[0];
+                s.cols[1] = t.cols[c];
+                s.comment = sourceName;
+                m_lastSet = si;
+                if (s.legend.isEmpty() && t.headers.size() == t.columns()) s.legend = t.headers[c];
                 ++created;
             }
             continue;
         }
-        // single set of the given type
+        // single set of the given type; with a TYPE line in the file, X followed by several
+        // column groups (X Y1 Y2 ..., or X Y1 dY1 Y2 dY2 ...) gives one set per group
         const int ncols = setTypeColumns(type);
-        Graph& g = m_p->graphs[gi];
-        const int si = g.nextEmptySet();
-        const bool existed = g.set(si) != nullptr;
-        DataSet& s = g.ensureSet(si);
-        if (!existed) presets::styleSet(s, si, m_p->stylePreset);
-        s.type = type;
-        s.comment = sourceName;
-        if (t.columns() == 1) {
-            QVector<double> idx(t.rows());
-            for (int i = 0; i < idx.size(); ++i) idx[i] = i;
-            s.cols[0] = idx;
-            s.cols[1] = t.cols[0];
-        } else {
-            for (int c = 0; c < ncols; ++c) s.cols[c] = c < t.columns() ? t.cols[c] : QVector<double>(t.rows(), 0.0);
+        int groups = 1;
+        if (fileTyped && ncols > 1 && t.columns() > ncols && (t.columns() - 1) % (ncols - 1) == 0)
+            groups = (t.columns() - 1) / (ncols - 1);
+        for (int grp = 0; grp < groups; ++grp) {
+            Graph& g = m_p->graphs[gi];
+            const int si = g.nextEmptySet();
+            const bool existed = g.set(si) != nullptr;
+            DataSet& s = g.ensureSet(si);
+            if (!existed) presets::styleSet(s, si, m_p->stylePreset);
+            s.active = true;
+            s.type = type;
+            s.comment = sourceName;
+            if (t.columns() == 1) {
+                QVector<double> idx(t.rows());
+                for (int i = 0; i < idx.size(); ++i) idx[i] = i;
+                s.cols[0] = idx;
+                s.cols[1] = t.cols[0];
+            } else {
+                for (int c = 0; c < ncols; ++c) {
+                    const int src = c == 0 ? 0 : 1 + grp * (ncols - 1) + (c - 1);
+                    s.cols[c] = src < t.columns() ? t.cols[src] : QVector<double>(t.rows(), 0.0);
+                }
+            }
+            if (t.hasStrings()) s.strings = t.strings;
+            if (s.legend.isEmpty() && t.headers.size() == t.columns()) {
+                if (t.columns() == 2) s.legend = t.headers[1];
+                else if (groups > 1) s.legend = t.headers[1 + grp * (ncols - 1)];
+            }
+            m_lastSet = si;
+            ++created;
         }
-        if (t.hasStrings()) s.strings = t.strings;
-        if (t.headers.size() >= 2 && t.headers.size() == t.columns() && t.columns() == 2) s.legend = t.headers[1];
-        m_lastSet = si;
-        ++created;
     }
     if (mode == ReadMode::Block && m_block.isEmpty()) error(QStringLiteral("no block data in %1").arg(sourceName));
     if (created > 0) applyAutoscaleOnRead(gi);

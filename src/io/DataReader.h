@@ -42,6 +42,9 @@ bool looksLikeData(const QString& line);
 QVector<DataTable> parseText(const QString& text, QStringList* commands = nullptr, double referenceDate = 0.0,
                              DateHint hint = DateHint::ISO);
 
+/// Does a data file carry Grace commands ('@' lines, as in GROMACS .xvg files)?
+bool hasGraceCommands(const QString& text);
+
 /// Read a file (handles UTF-8 and Latin-1, and "-" for stdin).
 bool readFile(const QString& path, QString* text, QString* error);
 
