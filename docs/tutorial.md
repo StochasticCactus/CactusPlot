@@ -22,8 +22,9 @@ times, with the uncertainty of each point in the third column.
 ```
 
 Start CactusPlot and choose **Edit ▸ Import from Clipboard** (**Ctrl+Shift+V**). The import dialog
-shows a preview. CactusPlot sees three columns and suggests the set type **XYDY** (X, Y and the
-error in Y). Click **Import**.
+shows a preview. Because the third column is called "error", CactusPlot suggests the set type
+**XYDY** (X, Y and the error in Y). Without such a name, extra columns would become extra curves.
+Click **Import**.
 
 The points appear with error bars, and the axes are scaled to the data. The legend says "counts":
 the names in the `#` header line are used for legends.

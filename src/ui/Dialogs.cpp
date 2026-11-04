@@ -900,11 +900,11 @@ ImportDialog::ImportDialog(Document* doc, const QString& path, const QString& te
         const auto m = typeRe.match(c);
         if (m.hasMatch() && parseSetType(m.captured(1).toLower(), &t)) m_fileType = int(t);
     }
-    if (m_fileType >= 0) {
-        const int cols = tables.isEmpty() ? 0 : tables[0].columns();
-        if (SetType(m_fileType) == SetType::XY && cols > 2) m_mode->setCurrentIndex(1);
-        m_type->setCurrentIndex(m_fileType);
-    }
+    // as in Grace, error bars only when the file declares them; other extra columns are more curves
+    const int cols = tables.isEmpty() ? 0 : tables[0].columns();
+    if (m_fileType < 0 && !tables.isEmpty() && datareader::typeFromHeaders(tables[0]) == SetType::XYDY) m_fileType = int(SetType::XYDY);
+    if (m_fileType >= 0) m_type->setCurrentIndex(m_fileType);
+    if ((m_fileType < 0 || SetType(m_fileType) == SetType::XY) && cols > 2) m_mode->setCurrentIndex(1);
     reparse();
 }
 
@@ -921,10 +921,7 @@ void ImportDialog::reparse()
     m_summary->setText(tr("%n block(s), ", nullptr, tables.size()) + tr("%1 rows, %2 columns.").arg(rows).arg(cols) + headers);
     m_columns->setEnabled(m_mode->currentIndex() == 2);
     m_type->setEnabled(m_mode->currentIndex() != 1);
-    if (m_fileType < 0 && m_mode->currentIndex() == 0 && m_type->currentIndex() == 0 && cols == 3) {
-        // three columns: a common case is X Y dY
-        m_type->setCurrentIndex(int(SetType::XYDY));
-    }
+
 }
 
 void ImportDialog::accept()

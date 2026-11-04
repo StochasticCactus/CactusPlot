@@ -177,6 +177,7 @@ Outcome process(const QStringList& args)
         if (hardcopy && resultsFile.isEmpty() && !m.startsWith(QLatin1String("Error: "))) out(m);
     };
     SetType settype = SetType::XY;
+    bool settypeExplicit = false;
     bool firstData = true;
 
     auto readData = [&](const QString& path, Interpreter::ReadMode mode) {
@@ -193,7 +194,7 @@ Outcome process(const QStringList& args)
             R.exitCode = 1;
             return;
         }
-        if (mode == Interpreter::ReadMode::Single && projectio::isProjectText(text)) {
+        if ((mode == Interpreter::ReadMode::Single || mode == Interpreter::ReadMode::Auto) && projectio::isProjectText(text)) {
             // a project file: replace the current project (Grace semantics)
             Project p;
             QStringList warns;
@@ -227,8 +228,9 @@ Outcome process(const QStringList& args)
             return args[++i];
         };
         if (!a.startsWith(QLatin1Char('-')) || a == QLatin1String("-")) {
-            if (a == QLatin1String("-") || pipeSource) readData(a, Interpreter::ReadMode::Single);
-            else readData(a, Interpreter::ReadMode::Single);
+            // without -settype, X Y1 Y2 ... gives one curve per column; error bars only when the file
+            // says so ("@TYPE xydy") or -settype asks for them
+            readData(a, settypeExplicit ? Interpreter::ReadMode::Single : Interpreter::ReadMode::Auto);
             pipeSource = false;
             continue;
         }
@@ -343,7 +345,7 @@ Outcome process(const QStringList& args)
         if (o == QLatin1String("-settype")) {
             SetType t;
             const QString v = next("type");
-            if (parseSetType(v, &t)) settype = t;
+            if (parseSetType(v, &t)) { settype = t; settypeExplicit = true; }
             else err(QStringLiteral("Unknown set type %1").arg(v));
             continue;
         }

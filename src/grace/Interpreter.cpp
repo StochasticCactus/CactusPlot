@@ -2110,7 +2110,7 @@ bool Interpreter::readDataText(const QString& text, ReadMode mode, SetType type,
         }
         execute(cmd);
     }
-    const bool fileTyped = m_typeSeen && fileTypeOverrides && mode == ReadMode::Single;
+    const bool fileTyped = m_typeSeen && fileTypeOverrides && (mode == ReadMode::Single || mode == ReadMode::Auto);
     if (fileTyped) type = m_nextSetType;
     if (m_typeSeen) {
         // TYPE applies to this file only
@@ -2144,10 +2144,12 @@ bool Interpreter::readDataText(const QString& text, ReadMode mode, SetType type,
             continue;
         }
         // single set of the given type; with a TYPE line in the file, X followed by several
-        // column groups (X Y1 Y2 ..., or X Y1 dY1 Y2 dY2 ...) gives one set per group
-        const int ncols = setTypeColumns(type);
+        // column groups (X Y1 Y2 ..., or X Y1 dY1 Y2 dY2 ...) gives one set per group.
+        // Opening a file with no declared type: columns named like errors ("time counts error") are error bars.
+        const SetType ttype = (mode == ReadMode::Auto && !fileTyped && type == SetType::XY) ? datareader::typeFromHeaders(t) : type;
+        const int ncols = setTypeColumns(ttype);
         int groups = 1;
-        if (fileTyped && ncols > 1 && t.columns() > ncols && (t.columns() - 1) % (ncols - 1) == 0)
+        if ((fileTyped || mode == ReadMode::Auto) && ncols > 1 && t.columns() > ncols && (t.columns() - 1) % (ncols - 1) == 0)
             groups = (t.columns() - 1) / (ncols - 1);
         for (int grp = 0; grp < groups; ++grp) {
             Graph& g = m_p->graphs[gi];
@@ -2156,7 +2158,7 @@ bool Interpreter::readDataText(const QString& text, ReadMode mode, SetType type,
             DataSet& s = g.ensureSet(si);
             if (!existed) presets::styleSet(s, si, m_p->stylePreset);
             s.active = true;
-            s.type = type;
+            s.type = ttype;
             s.comment = sourceName;
             if (t.columns() == 1) {
                 QVector<double> idx(t.rows());
@@ -2175,6 +2177,17 @@ bool Interpreter::readDataText(const QString& text, ReadMode mode, SetType type,
                 s.legend = t.headers[1 + grp * (ncols - 1)];
             m_lastSet = si;
             ++created;
+        }
+    }
+    // a time series written with dates: label the x axis with dates instead of day numbers
+    if (created > 0 && mode != ReadMode::Block && !tables.isEmpty() && tables[0].xIsDate) {
+        Axis& ax = m_p->graphs[gi].axes[0];
+        const LabelFormat f = ax.format;
+        const bool isDateFormat = f >= LabelFormat::DDMMYY && f <= LabelFormat::YYMMDDHMS;
+        if (!isDateFormat) {
+            double lo = 1e300, hi = -1e300;
+            for (double v : tables[0].cols[0]) { lo = std::min(lo, v); hi = std::max(hi, v); }
+            ax.format = (hi - lo) <= 2.0 ? LabelFormat::YYMMDDHMS : LabelFormat::YYMMDD;
         }
     }
     if (mode == ReadMode::Block && m_block.isEmpty()) error(QStringLiteral("no block data in %1").arg(sourceName));

@@ -11,6 +11,7 @@
 #include "grace/ProjectIO.h"
 #include "io/DataReader.h"
 #include "plot/Fonts.h"
+#include "plot/Ticks.h"
 #include "render/Export.h"
 #include "render/PlotRenderer.h"
 
@@ -325,6 +326,25 @@ private slots:
                                 QStringLiteral("clipboard")));
         QCOMPARE(h.graphs[0].sets[0].legend, QStringLiteral("counts"));
 
+        // a date and a time separated by a space are one value (a time series, not three columns)
+        QVector<double> dv;
+        QVERIFY(datareader::parseLine(QStringLiteral("2024-01-01 12:00:00,5.1"), &dv, nullptr));
+        QCOMPARE(dv.size(), 2);
+        QVERIFY(std::fabs(dv[0] - (ticks::calendarToJulian(2024, 1, 1) + 0.5)) < 1e-9);
+        QCOMPARE(dv[1], 5.1);
+
+        // a column is error bars only when its header says so
+        for (const char* h : {"error", "err", "Error (nm)", "sd", "SD", "stdev", "sigma", "σ", "dy", "uncertainty", "rmsd_err", "±", "sem"})
+            QVERIFY2(datareader::isErrorHeader(QString::fromUtf8(h)), h);
+        for (const char* h : {"time", "temperature", "date", "density", "depth", "distance", "dose", "signal", "y", "counts", "sample"})
+            QVERIFY2(!datareader::isErrorHeader(QString::fromUtf8(h)), h);
+        DataTable ht;
+        ht.cols = {{0, 1}, {1, 2}, {0.1, 0.2}};
+        ht.headers = {QStringLiteral("time"), QStringLiteral("counts"), QStringLiteral("error")};
+        QCOMPARE(datareader::typeFromHeaders(ht), SetType::XYDY);
+        ht.headers[2] = QStringLiteral("background");
+        QCOMPARE(datareader::typeFromHeaders(ht), SetType::XY);
+
         QVERIFY(datareader::hasGraceCommands(energy));
         QVERIFY(!datareader::hasGraceCommands(QStringLiteral("# x y\n1 2\n")));
     }
@@ -402,6 +422,19 @@ private slots:
         QVERIFY(r.errors.isEmpty());
         QCOMPARE(r.project.graph(0)->activeSetCount(), 1);
         QCOMPARE(r.project.graph(0)->sets[0].type, SetType::XY);
+        // plain multi-column data: one curve per column, error bars only when asked for
+        const QString three = dir.filePath(QStringLiteral("three.dat"));
+        QFile f3(three);
+        QVERIFY(f3.open(QIODevice::WriteOnly));
+        f3.write("# t a b\n0 1 5\n1 2 6\n2 3 7\n");
+        f3.close();
+        r = cli::process({QStringLiteral("cactusplot"), three});
+        QCOMPARE(r.project.graph(0)->activeSetCount(), 2);
+        QCOMPARE(r.project.graph(0)->sets[0].type, SetType::XY);
+        QCOMPARE(r.project.graph(0)->sets[1].legend, QStringLiteral("b"));
+        r = cli::process({QStringLiteral("cactusplot"), QStringLiteral("-settype"), QStringLiteral("xydy"), three});
+        QCOMPARE(r.project.graph(0)->activeSetCount(), 1);
+        QCOMPARE(r.project.graph(0)->sets[0].type, SetType::XYDY);
         r = cli::process({QStringLiteral("cactusplot"), dir.filePath(QStringLiteral("missing.xvg"))});
         QCOMPARE(r.errors.size(), 1);
         QVERIFY(r.launchGui);

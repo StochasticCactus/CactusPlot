@@ -76,9 +76,10 @@ bool parseDate(const QString& token, double* value, double referenceDate, DateHi
     return true;
 }
 
-bool parseLine(const QString& rawLine, QVector<double>* values, QString* label, double referenceDate, DateHint hint)
+bool parseLine(const QString& rawLine, QVector<double>* values, QString* label, double referenceDate, DateHint hint, bool* firstIsDate)
 {
     values->clear();
+    if (firstIsDate) *firstIsDate = false;
     if (label) label->clear();
     QString line = rawLine;
     // trailing quoted string
@@ -91,9 +92,21 @@ bool parseLine(const QString& rawLine, QVector<double>* values, QString* label, 
     // separators: whitespace, comma, semicolon, tab
     static const QRegularExpression sep(QStringLiteral("[\\s,;]+"));
     const QStringList toks = line.split(sep, Qt::SkipEmptyParts);
-    for (const QString& t : toks) {
+    static const QRegularExpression timeOfDay(QStringLiteral("^\\d{1,2}:\\d{2}(:\\d{2}(\\.\\d*)?)?$"));
+    for (int i = 0; i < toks.size(); ++i) {
+        const QString& t = toks[i];
         double v;
-        if (parseNumber(t, &v) || parseDate(t, &v, referenceDate, hint)) {
+        if (parseNumber(t, &v)) {
+            values->push_back(v);
+        } else if (parseDate(t, &v, referenceDate, hint)) {
+            // "2024-01-01 12:30:00": a date followed by a time of day is one value, not two columns
+            double frac;
+            if (!t.contains(QLatin1Char(':')) && i + 1 < toks.size() && timeOfDay.match(toks[i + 1]).hasMatch() &&
+                parseDate(toks[i + 1], &frac, 0.0, hint)) {
+                v += frac;
+                ++i;
+            }
+            if (firstIsDate && values->isEmpty()) *firstIsDate = true;
             values->push_back(v);
         } else {
             if (values->isEmpty()) return false;
@@ -101,6 +114,27 @@ bool parseLine(const QString& rawLine, QVector<double>* values, QString* label, 
         }
     }
     return !values->isEmpty();
+}
+
+bool isErrorHeader(const QString& header)
+{
+    static const QRegularExpression re(
+        QStringLiteral("^(d|δ|Δ|±|\\+/-)?\\s*(err|error|errors|uncertainty|unc|sd|s\\.d\\.|std|stdev|stddev|sigma|σ|sem|se|s\\.e\\.|dy|dx|ci)"
+                       "([ _.()\\[\\]-].*)?$|.*(_err|_error|_sd|_std|_sigma|_unc)$|^(±|\\+/-)$"),
+        QRegularExpression::CaseInsensitiveOption);
+    const QString h = header.trimmed();
+    return !h.isEmpty() && re.match(h).hasMatch() && h.compare(QLatin1String("date"), Qt::CaseInsensitive) != 0 &&
+           h.compare(QLatin1String("day"), Qt::CaseInsensitive) != 0 && h.compare(QLatin1String("depth"), Qt::CaseInsensitive) != 0 &&
+           h.compare(QLatin1String("density"), Qt::CaseInsensitive) != 0 && h.compare(QLatin1String("distance"), Qt::CaseInsensitive) != 0;
+}
+
+SetType typeFromHeaders(const DataTable& t)
+{
+    const int n = t.columns();
+    if (n < 3 || t.headers.size() != n || (n - 1) % 2 != 0) return SetType::XY;
+    for (int c = 2; c < n; c += 2)
+        if (!isErrorHeader(t.headers[c])) return SetType::XY;
+    return SetType::XYDY;
 }
 
 bool hasGraceCommands(const QString& text)
@@ -166,7 +200,8 @@ QVector<DataTable> parseText(const QString& text, QStringList* commands, double 
             }
             continue;
         }
-        if (!parseLine(t, &vals, &label, referenceDate, hint)) {
+        bool isDate = false;
+        if (!parseLine(t, &vals, &label, referenceDate, hint, &isDate)) {
             // header line (non-numeric) before any data
             if (cur.rows() == 0) {
                 pendingHeader = t.split(QRegularExpression(QStringLiteral("[\\t,;]+|\\s+")), Qt::SkipEmptyParts);
@@ -176,6 +211,7 @@ QVector<DataTable> parseText(const QString& text, QStringList* commands, double 
         }
         headerCandidate = false;
         const int r = cur.rows();
+        if (r == 0) cur.xIsDate = isDate;
         if (cur.cols.size() < vals.size()) {
             const int old = cur.cols.size();
             cur.cols.resize(vals.size());

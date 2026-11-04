@@ -635,48 +635,50 @@ bool MainWindow::openFile(const QString& path)
             flash(tr("Opened %1").arg(QFileInfo(path).fileName()), 4000);
         return true;
     }
-    // Data files that carry their own Grace commands (GROMACS .xvg output: titles, axis labels,
-    // legends, "@TYPE xydy") are read directly, as xmgrace does, so error bars and labels come along.
-    if (suffix == QLatin1String("xvg") || datareader::hasGraceCommands(text)) {
-        const QString name = QFileInfo(path).fileName();
-        QStringList errs;
-        int gi = std::max(0, m_doc->currentGraph());
-        if (datareader::parseText(text).isEmpty()) {
-            QMessageBox::warning(this, tr("Open failed"), tr("%1 contains no numeric data.").arg(name));
-            return false;
+    // Data files open directly, as in xmgrace: Grace commands in the file (GROMACS .xvg titles, labels,
+    // legends, "@TYPE xydy") are applied, error bars appear only when the file declares them, and
+    // X Y1 Y2 ... gives one curve per column. File > Import Data offers the full choice of layouts.
+    const QString name = QFileInfo(path).fileName();
+    if (datareader::parseText(text, nullptr, m_doc->project().referenceDate).isEmpty()) {
+        QMessageBox::warning(this, tr("Open failed"), tr("%1 contains no numeric data.").arg(name));
+        return false;
+    }
+    QStringList errs;
+    const int gi = std::max(0, m_doc->currentGraph());
+    m_doc->modify(tr("Open %1").arg(name), [&](Project& p) {
+        if (!p.graph(gi) || !p.graph(gi)->active) {
+            Graph& g = p.ensureGraph(gi);
+            g.active = true;
+            presets::styleGraph(g, p.stylePreset);
         }
-        m_doc->modify(tr("Open %1").arg(name), [&](Project& p) {
-            if (!p.graph(gi) || !p.graph(gi)->active) {
-                Graph& g = p.ensureGraph(gi);
-                g.active = true;
-                presets::styleGraph(g, p.stylePreset);
+        const int before = p.graphs[gi].sets.size();
+        Interpreter in(&p);
+        in.autoscaleOnRead = 0;
+        in.setCurrentGraph(gi);
+        in.readDataText(text, Interpreter::ReadMode::Auto, SetType::XY, gi, name);
+        errs = in.errors();
+        Graph& g = p.graphs[gi];
+        // unnamed curves: after their file, numbered when the file gave several
+        int fromFile = 0;
+        for (int i = 0; i < g.sets.size(); ++i)
+            if (g.sets[i].comment == name && g.sets[i].active && (i >= before || g.sets[i].size() > 0)) ++fromFile;
+        int shown = 0;
+        for (const DataSet& d : g.sets) if (d.active && d.size() > 0) ++shown;
+        if (shown > 1) {
+            int k = 0;
+            for (DataSet& d : g.sets) {
+                if (!d.active || !d.legend.isEmpty() || d.comment.isEmpty()) continue;
+                const QString base = QFileInfo(d.comment).completeBaseName();
+                d.legend = (d.comment == name && fromFile > 1) ? QStringLiteral("%1 %2").arg(base).arg(++k) : base;
             }
-            Interpreter in(&p);
-            in.autoscaleOnRead = 0;
-            in.setCurrentGraph(gi);
-            in.readDataText(text, Interpreter::ReadMode::Single, SetType::XY, gi, name);
-            errs = in.errors();
-            Graph& g = p.graphs[gi];
-            // several curves on one graph: name unlabelled ones after their file
-            int shown = 0;
-            for (const DataSet& d : g.sets) if (d.active && d.size() > 0) ++shown;
-            if (shown > 1)
-                for (DataSet& d : g.sets)
-                    if (d.active && d.legend.isEmpty() && !d.comment.isEmpty()) d.legend = QFileInfo(d.comment).completeBaseName();
-            g.autoscale();
-        });
-        m_doc->setCurrentGraph(gi);
-        addRecent(path);
-        if (!errs.isEmpty()) flash(tr("Opened %1 with %n unsupported statement(s) ignored", nullptr, errs.size()).arg(name), 8000);
-        else flash(tr("Opened %1").arg(name), 4000);
-        return true;
-    }
-    ImportDialog d(m_doc, path, text, this);
-    if (d.exec() == QDialog::Accepted) {
-        addRecent(path);
-        return true;
-    }
-    return false;
+        }
+        g.autoscale();
+    });
+    m_doc->setCurrentGraph(gi);
+    addRecent(path);
+    if (!errs.isEmpty()) flash(tr("Opened %1 with %n unsupported statement(s) ignored", nullptr, errs.size()).arg(name), 8000);
+    else flash(tr("Opened %1").arg(name), 4000);
+    return true;
 }
 
 void MainWindow::openDialog()

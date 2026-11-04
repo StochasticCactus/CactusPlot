@@ -42,7 +42,9 @@ public:
     /// Execute one line of commands (statements separated by ';').
     bool execute(const QString& line);
 
-    enum class ReadMode { Single, NXY, Block };
+    /// Single: one set per block, columns in the order of the set type (Grace's "read").
+    /// Auto: like Single, but with no type given, X Y1 Y2 ... gives one set per Y column (opening files).
+    enum class ReadMode { Single, NXY, Block, Auto };
     /// Read a data file into the given graph (-1: current graph).
     bool readData(const QString& path, ReadMode mode, SetType type, int graph = -1);
     bool readDataText(const QString& text, ReadMode mode, SetType type, int graph, const QString& sourceName);

@@ -161,6 +161,9 @@ private slots:
             {"plain.xvg", "0 1\n1 2\n2 4\n", SetType::XY, 1},
             {"gyrate.xvg", "@TYPE xy\n@ s0 legend \"Rg\"\n@ s1 legend \"Rg\\sX\\N\"\n0 1 2\n1 2 3\n", SetType::XY, 2},
             {"avg.xvg", "@TYPE xydy\n0 1 0.1\n1 2 0.2\n", SetType::XYDY, 1},
+            {"series.dat", "# t a b\n0 1 5\n1 2 6\n2 3 7\n", SetType::XY, 2},
+            {"counts.dat", "# time counts error\n0 98 4\n1 61 3\n2 38 3\n", SetType::XYDY, 1},
+            {"temperature.csv", "time,temperature\n2024-01-01 00:00:00,5.1\n2024-01-01 01:00:00,4.8\n", SetType::XY, 1},
         };
         for (const Case& c : cases) {
             const QString path = dir.filePath(QString::fromLatin1(c.name));
@@ -175,14 +178,17 @@ private slots:
             QCOMPARE(g.activeSetCount(), c.sets);
             QCOMPARE(g.sets[0].type, c.type);
         }
-        const QStringList texts{QStringLiteral("# t y\n0 1\n1 2\n2 3\n"), QStringLiteral("time,value\n0,1\n1,2\n"),
-                                QStringLiteral("@TYPE xy\n0 1\n1 2\n")};
-        for (const QString& t : texts) {
+        // the import dialog: no error bars unless the file declares them; extra columns are more curves
+        const QList<QPair<QString, int>> texts{{QStringLiteral("# t y\n0 1\n1 2\n2 3\n"), 1},
+                                               {QStringLiteral("time,value\n0,1\n1,2\n"), 1},
+                                               {QStringLiteral("@TYPE xy\n0 1\n1 2\n"), 1},
+                                               {QStringLiteral("0 1 5\n1 2 6\n"), 2}};
+        for (const auto& t : texts) {
             Document doc;
             doc.setProject(presets::newProject());
-            ImportDialog d(&doc, QStringLiteral("x.dat"), t);
+            ImportDialog d(&doc, QStringLiteral("x.dat"), t.first);
             QMetaObject::invokeMethod(&d, "accept");
-            QCOMPARE(doc.project().graphs[0].activeSetCount(), 1);
+            QCOMPARE(doc.project().graphs[0].activeSetCount(), t.second);
             QCOMPARE(doc.project().graphs[0].sets[0].type, SetType::XY);
         }
     }

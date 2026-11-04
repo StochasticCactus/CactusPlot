@@ -7,12 +7,15 @@
 #include <QStringList>
 #include <QVector>
 
+#include "core/Types.h"
+
 namespace cactus {
 
 struct DataTable {
     QVector<QVector<double>> cols;  ///< column-major
     QStringList strings;            ///< optional trailing string per row
     QStringList headers;            ///< column names if a header line was found
+    bool xIsDate = false;           ///< the first column was written as dates/times (values are days)
     int rows() const { return cols.isEmpty() ? 0 : int(cols[0].size()); }
     int columns() const { return int(cols.size()); }
     bool hasStrings() const
@@ -29,7 +32,7 @@ enum class DateHint { ISO, European, US, Days, Seconds, None };
 /// Split a data line into numeric fields and an optional quoted string.
 /// Returns false if the line contains no numeric data.
 bool parseLine(const QString& line, QVector<double>* values, QString* label, double referenceDate = 0.0,
-               DateHint hint = DateHint::ISO);
+               DateHint hint = DateHint::ISO, bool* firstIsDate = nullptr);
 
 /// Parse a date/time token into a Julian date (minus referenceDate). Returns false if not a date.
 bool parseDate(const QString& token, double* value, double referenceDate = 0.0, DateHint hint = DateHint::ISO);
@@ -41,6 +44,13 @@ bool looksLikeData(const QString& line);
 /// '#' or '!' are comments; lines starting with '@' are returned in `commands`.
 QVector<DataTable> parseText(const QString& text, QStringList* commands = nullptr, double referenceDate = 0.0,
                              DateHint hint = DateHint::ISO);
+
+/// Is a column header the name of an uncertainty ("error", "err", "sd", "sigma", "dy", "uncertainty", ...)?
+bool isErrorHeader(const QString& header);
+
+/// The set type a table's header implies: XYDY when every second column after X is named like an
+/// error (time counts error / x y1 err1 y2 err2), otherwise XY. Without headers, XY.
+SetType typeFromHeaders(const DataTable& t);
 
 /// Does a data file carry Grace commands ('@' lines, as in GROMACS .xvg files)?
 bool hasGraceCommands(const QString& text);

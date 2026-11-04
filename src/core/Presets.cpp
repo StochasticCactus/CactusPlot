@@ -212,7 +212,8 @@ void styleGraph(Graph& g, const QString& preset)
     for (int a = 0; a < 4; ++a) {
         Axis& ax = g.axes[a];
         ax.bar = LineStyle{s.axis, s.frameWidth, 1};
-        ax.barOn = true;
+        // the frame draws the box; an axis line on top would hide the frame's type, colour and width
+        ax.barOn = false;
         ax.tickDir = s.tickDir;
         ax.tickSide = s.tickSide;
         ax.majorProps.size = s.majorSize;

@@ -18,7 +18,7 @@ data files that follow it, and `-graph 1` sends the following files to graph 1.
 | Argument | Effect |
 |---|---|
 | `file.cplot`, `file.agr`, `file.xvgr`, `file.par` | Opens the project (replacing the current one). |
-| `file.xvg`, `file.dat`, any other file | Reads it as data into the current graph, one set per block. Grace commands in the file (`@…` lines) are run. |
+| `file.xvg`, `file.dat`, any other file | Reads it as data into the current graph. Grace commands in the file (`@…` lines) are run. Columns are used as described in [How columns are used](../guide/data.md#how-columns-are-used); with `-settype` before the file, exactly as Grace does. |
 | `-` | Reads data from standard input. |
 
 ## Grace-compatible options

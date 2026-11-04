@@ -4,7 +4,7 @@
 
 | How | What happens |
 |---|---|
-| **Drag files onto the window** | Projects open. Data files open the import dialog. `.xvg` files load directly. |
+| **Drag files onto the window** | Projects open. Data files load directly, as in xmgrace (see [How columns are used](#how-columns-are-used)). |
 | **File ▸ Open** (Ctrl+O) | Same as dragging. |
 | **File ▸ Import Data** (Ctrl+I) | Always shows the import dialog, so you choose the layout. |
 | **Edit ▸ Import from Clipboard** (Ctrl+Shift+V) | Imports a table copied from a spreadsheet, a text editor or a web page. |
@@ -34,14 +34,33 @@ CactusPlot reads plain text tables, the kind most programs can write:
 - **Numbers:** `1.5`, `-2e-3`, Fortran style `1.5D+02`, `nan`, `inf`.
 - **Dates and times:** ISO dates (`2024-05-01`, `2024-05-01T12:30:00`), `2024/05/01`, and
   `05/01/2024` (month first). For day-first dates (`01/05/2024`), start CactusPlot with
-  `-datehint european`. Times of day (`12:30:15`) are read too. Dates become numbers (days), which
-  axes can print as dates; see [Axes and ticks](axes.md#dates-and-times).
+  `-datehint european`. A date followed by a time (`2024-05-01 12:30:00`) is one value, and times
+  of day (`12:30:15`) are read too. Dates become numbers (days); when the first column holds dates,
+  the x axis is labelled with dates automatically. See [Axes and ticks](axes.md#dates-and-times).
 - **Labels:** a quoted string at the end of a line (`3 4 "peak A"`) is kept as that point's label.
   It can be shown next to the point (annotated values) or used for pie slices.
 - **Blocks:** a line with `&` separates blocks. Each block becomes its own set.
 - **Grace commands:** lines starting with `@` are Grace commands (titles, labels, set types…).
   They are run when the file is read, as in xmgrace. This is how GROMACS `.xvg` files carry their
   labels; see [GROMACS files](gromacs.md).
+
+## How columns are used
+
+When you open a data file (double-click, drag, **File ▸ Open** or `cactusplot file`), CactusPlot
+decides how to use its columns the way Grace does, plus two conveniences:
+
+| The file has | You get |
+|---|---|
+| `@TYPE xydy` (GROMACS and Grace files) | error bars, from the third column |
+| a header naming a column as an error: `# time counts error`, `x,y,sd`, `t signal sigma` | error bars from that column |
+| two columns | one curve |
+| more columns, without any of the above | one curve per column, all against the first column |
+| a date and time in the first column (`2024-03-01 12:00:00`) | a time series, with dates on the x axis |
+
+So a time series never gets error bars by accident. To choose differently, use **File ▸ Import
+Data**, or `-settype xydy` / `-nxy` on the command line. Header names that count as errors include
+`error`, `err`, `sd`, `std`, `stdev`, `sigma`, `σ`, `sem`, `uncertainty`, `dy`, `±`, and names
+ending in `_err` or `_sd`.
 
 ## The import dialog
 
@@ -52,7 +71,7 @@ The dialog shows the beginning of the file and how many blocks, rows and columns
 | **Layout: one set per data block** | Each block becomes one set. Its columns are used in the order of the set type: X, Y, then error columns and so on. |
 | **Layout: X, then one set per Y column (NXY)** | The first column is X and every other column becomes its own set. Use this for tables such as `x y1 y2 y3`. |
 | **Layout: choose columns** | Pick columns by number, starting at 0, in the order of the set type. Example: `0:2:3` makes a set from columns 0 (X), 2 (Y) and 3 (dY). |
-| **Set type** | How the columns are used: XY, XYDY (error bars in y), BAR, XYZ, … See [Set types](../reference/set-types.md). With three columns, XYDY is suggested. If the file says `@TYPE …`, that type is suggested. |
+| **Set type** | How the columns are used: XY, XYDY (error bars in y), BAR, XYZ, … See [Set types](../reference/set-types.md). The suggestion follows the file: its `@TYPE` line, or column names such as `error` (see below); otherwise XY, with several columns as several curves. |
 | **Into** | The current graph, a new graph, or a graph you choose. |
 | **Autoscale the graph** | Fit the axes to the data after importing. |
 | **Use column headers / file name as legends** | Name new sets after their columns, or after the file. |

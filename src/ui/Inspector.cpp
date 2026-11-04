@@ -323,8 +323,8 @@ QWidget* Inspector::buildGraph()
     F->combo(tr("Type"), {tr("Closed"), tr("Half open"), tr("Break top"), tr("Break bottom"), tr("Break left"), tr("Break right")},
              GGET(int, int(g->frame.type)), GSET(int, g->frame.type = FrameType(v)));
     F->lineStyle(tr("Line"), GGET(int, g->frame.line.style), GSET(int, g->frame.line.style = v));
-    F->color(tr("Colour"), GGET(QColor, g->frame.line.color), GSET(QColor, g->frame.line.color = v));
-    F->real(tr("Width"), GGET(double, g->frame.line.width), GSET(double, g->frame.line.width = v), 0, 20, 0.25, 2);
+    F->color(tr("Colour"), GGET(QColor, g->frame.line.color), GSET(QColor, g->frame.line.color = v; if (g->frame.line.style == 0) g->frame.line.style = 1));
+    F->real(tr("Width"), GGET(double, g->frame.line.width), GSET(double, g->frame.line.width = v; if (g->frame.line.style == 0) g->frame.line.style = 1), 0, 20, 0.25, 2);
     F->section(tr("Plot area background"));
     F->pattern(tr("Pattern"), GGET(int, g->frame.background.pattern), GSET(int, g->frame.background.pattern = v));
     F->color(tr("Colour"), GGET(QColor, g->frame.background.color), GSET(QColor, g->frame.background.color = v; if (g->frame.background.pattern == 0) g->frame.background.pattern = 1));
@@ -366,12 +366,12 @@ QWidget* Inspector::buildAxis()
     f->real(tr("Offset along"), AGET(double, a.labelOffset.x()), ASET(double, a.labelOffset.setX(v)), -2, 2, 0.005, 3);
     f->real(tr("Offset away"), AGET(double, a.labelOffset.y()), ASET(double, a.labelOffset.setY(v)), -2, 2, 0.005, 3);
     f->section(tr("Axis line"));
-    f->check(tr("Draw axis bar"), AGET(bool, a.barOn), ASET(bool, a.barOn = v));
-    f->color(tr("Colour"), AGET(QColor, a.bar.color), ASET(QColor, a.bar.color = v));
-    f->real(tr("Width"), AGET(double, a.bar.width), ASET(double, a.bar.width = v), 0, 20, 0.25, 2);
-    f->check(tr("Place at zero of the other axis"), AGET(bool, a.zero), ASET(bool, a.zero = v));
-    f->real(tr("Offset (normal side)"), AGET(double, a.offset.x()), ASET(double, a.offset.setX(v)), 0, 2, 0.005, 3);
-    f->real(tr("Offset (opposite side)"), AGET(double, a.offset.y()), ASET(double, a.offset.setY(v)), 0, 2, 0.005, 3);
+    f->check(tr("Draw axis line (over the frame)"), AGET(bool, a.barOn), ASET(bool, a.barOn = v));
+    f->color(tr("Colour"), AGET(QColor, a.bar.color), ASET(QColor, a.bar.color = v; a.barOn = true));
+    f->real(tr("Width"), AGET(double, a.bar.width), ASET(double, a.bar.width = v; a.barOn = true), 0, 20, 0.25, 2);
+    f->check(tr("Place at zero of the other axis"), AGET(bool, a.zero), ASET(bool, a.zero = v; if (v) a.barOn = true));
+    f->real(tr("Offset (normal side)"), AGET(double, a.offset.x()), ASET(double, a.offset.setX(v); if (v > 0) a.barOn = true), 0, 2, 0.005, 3);
+    f->real(tr("Offset (opposite side)"), AGET(double, a.offset.y()), ASET(double, a.offset.setY(v); if (v > 0) a.barOn = true), 0, 2, 0.005, 3);
     tabs->addTab(scrolled(f), tr("Axis"));
 
     auto* t = new Form(m_doc);
@@ -391,12 +391,12 @@ QWidget* Inspector::buildAxis()
     t->section(tr("Appearance"));
     t->combo(tr("Direction"), {tr("In"), tr("Out"), tr("Both")}, AGET(int, int(a.tickDir)), ASET(int, a.tickDir = TickDirection(v)));
     t->combo(tr("Sides"), kSides, AGET(int, int(a.tickSide)), ASET(int, a.tickSide = SideOp(v)));
-    t->real(tr("Major length"), AGET(double, a.majorProps.size), ASET(double, a.majorProps.size = v), 0, 5, 0.05, 2);
-    t->real(tr("Minor length"), AGET(double, a.minorProps.size), ASET(double, a.minorProps.size = v), 0, 5, 0.05, 2);
-    t->color(tr("Major colour"), AGET(QColor, a.majorProps.line.color), ASET(QColor, a.majorProps.line.color = v));
-    t->real(tr("Major width"), AGET(double, a.majorProps.line.width), ASET(double, a.majorProps.line.width = v), 0, 20, 0.25, 2);
-    t->color(tr("Minor colour"), AGET(QColor, a.minorProps.line.color), ASET(QColor, a.minorProps.line.color = v));
-    t->real(tr("Minor width"), AGET(double, a.minorProps.line.width), ASET(double, a.minorProps.line.width = v), 0, 20, 0.25, 2);
+    t->real(tr("Major length"), AGET(double, a.majorProps.size), ASET(double, a.majorProps.size = v; if (a.majorProps.line.style == 0) a.majorProps.line.style = 1), 0, 5, 0.05, 2);
+    t->real(tr("Minor length"), AGET(double, a.minorProps.size), ASET(double, a.minorProps.size = v; if (a.minorProps.line.style == 0) a.minorProps.line.style = 1), 0, 5, 0.05, 2);
+    t->color(tr("Major colour"), AGET(QColor, a.majorProps.line.color), ASET(QColor, a.majorProps.line.color = v; if (a.majorProps.line.style == 0) a.majorProps.line.style = 1));
+    t->real(tr("Major width"), AGET(double, a.majorProps.line.width), ASET(double, a.majorProps.line.width = v; if (a.majorProps.line.style == 0) a.majorProps.line.style = 1), 0, 20, 0.25, 2);
+    t->color(tr("Minor colour"), AGET(QColor, a.minorProps.line.color), ASET(QColor, a.minorProps.line.color = v; if (a.minorProps.line.style == 0) a.minorProps.line.style = 1));
+    t->real(tr("Minor width"), AGET(double, a.minorProps.line.width), ASET(double, a.minorProps.line.width = v; if (a.minorProps.line.style == 0) a.minorProps.line.style = 1), 0, 20, 0.25, 2);
     t->section(tr("Grid"));
     t->check(tr("Major grid lines"), AGET(bool, a.majorProps.grid), ASET(bool, a.majorProps.grid = v));
     t->color(tr("Major grid colour"), AGET(QColor, a.majorProps.gridLine.color), ASET(QColor, a.majorProps.gridLine.color = v));

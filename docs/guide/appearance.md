@@ -84,7 +84,7 @@ in [Axes and ticks](axes.md).
 | **Axis visible** | Draw this axis at all. |
 | **Label** | The axis title, e.g. `Time $t$ (s)`, with **Font**, **Size**, **Colour**, **Orientation** (parallel or perpendicular to the axis) and **Side** (normal, opposite or both). |
 | **Automatic placement** | Keep the label clear of the tick labels. Untick it to set **Offset along** and **Offset away** yourself. |
-| **Axis line** | **Draw axis bar** (a line along the axis, separate from the frame), its **Colour** and **Width**. |
+| **Axis line** | **Draw axis line (over the frame)**: an extra line along the axis, drawn on top of the frame; off by default, so the frame settings decide how the box looks. Its **Colour** and **Width**. It is switched on automatically when you place the axis at zero or offset it. |
 | **Place at zero of the other axis** | Draw the axis through 0 instead of along the edge (a "zero axis"). |
 | **Offset** | Move the axis away from the frame, on the normal or the opposite side. |
 
