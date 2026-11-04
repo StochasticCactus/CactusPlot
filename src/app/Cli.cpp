@@ -55,7 +55,9 @@ bool isBatchProgram(const QString& argv0)
 
 QString versionText()
 {
-    QString s = QStringLiteral(CACTUS_APP_NAME " " CACTUS_VERSION "\n");
+    QString s = QStringLiteral(CACTUS_APP_NAME " " CACTUS_VERSION);
+    if (!QStringLiteral(CACTUS_BUILD_INFO).isEmpty()) s += QStringLiteral(" (" CACTUS_BUILD_INFO ")");
+    s += QLatin1Char('\n');
     s += QStringLiteral("Grace-compatible 2D plotting. Built with Qt %1.\n").arg(QString::fromLatin1(qVersion()));
     s += QStringLiteral("Hardcopy devices: %1\n").arg(exporter::formats().join(QStringLiteral(", ")));
     s += QStringLiteral("License: GPL-2.0-or-later. " CACTUS_HOMEPAGE "\n");

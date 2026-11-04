@@ -28,7 +28,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends ninja-build cmake g++ qt6-base-dev qt6-svg-dev \
             libqt6svg6-dev qt6-base-dev-tools libgl1-mesa-dev rpm
       - name: Configure
-        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCACTUS_BUILD_NUMBER=${{ github.run_number }} -DCMAKE_INSTALL_PREFIX=/usr
       - name: Build
         run: cmake --build build --parallel
       - name: Test
@@ -67,7 +67,7 @@ jobs:
             libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 libfuse2 file
       - name: Build
         run: |
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCACTUS_BUILD_NUMBER=${{ github.run_number }} -DCMAKE_INSTALL_PREFIX=/usr
           cmake --build build --parallel
       - name: Test
         env:
@@ -111,7 +111,7 @@ jobs:
       - name: Build
         run: |
           brew install ninja || true
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCACTUS_BUILD_NUMBER=${{ github.run_number }} -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
             -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0
           cmake --build build --parallel
       - name: Test
@@ -146,7 +146,7 @@ jobs:
       - uses: ilammy/msvc-dev-cmd@v1
       - name: Build
         run: |
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCACTUS_BUILD_NUMBER=${{ github.run_number }}
           cmake --build build --parallel
       - name: Test
         env:

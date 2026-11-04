@@ -98,6 +98,16 @@ Commands that are not understood are skipped with a warning on standard error
 
 ## Installation and start-up
 
+**Which version do I have?**
+Run `cactusplot -version`, or open **Help ▸ About**. Both show the version, the commit and the
+build number, e.g. `CactusPlot 0.9.0 (commit d6381e8, build 15)`. Include this line in bug reports.
+
+**I installed a newer `.deb`, but nothing changed.**
+Early packages were all called version 0.9.0, so the package manager could keep the copy already
+installed. Packages now carry the build number (for example `0.9.0-15`) and replace older ones. If
+in doubt, reinstall: `sudo apt install --reinstall ./cactusplot_*.deb`, then check
+`cactusplot -version`.
+
 **Windows says "Windows protected your PC".**
 The installer is not signed with a paid certificate. Click **More info ▸ Run anyway**.
 

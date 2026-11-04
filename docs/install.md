@@ -72,6 +72,9 @@ and later. On older releases, use the AppImage.
 sudo apt install ./cactusplot_<version>_amd64.deb
 ```
 
+Each build's package has its own version (for example `0.9.0-15`), so installing a newer one
+replaces the old one. `cactusplot -version` shows which build is installed.
+
 This adds a menu entry, opens `.cplot`, `.agr` and `.xvg` files by double-click, and installs two
 commands: `cactusplot` and `cactusbat` (the batch version, like `gracebat`). Remove it with
 `sudo apt remove cactusplot`.

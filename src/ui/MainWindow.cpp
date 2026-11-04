@@ -1017,11 +1017,13 @@ void MainWindow::about()
     QMessageBox box(this);
     box.setWindowTitle(tr("About CactusPlot"));
     box.setIconPixmap(icons::appIcon().pixmap(96, 96));
+    const QString version = QStringLiteral(CACTUS_VERSION) +
+                            (QStringLiteral(CACTUS_BUILD_INFO).isEmpty() ? QString() : QStringLiteral(" <small>(" CACTUS_BUILD_INFO ")</small>"));
     box.setText(tr("<h2>CactusPlot %1</h2><p>Modern, cross-platform 2D scientific plotting, compatible with Grace/xmgrace "
                    "projects and batch scripts.</p><p>Built with Qt %2. Licensed under the GNU GPL version 2 or later.</p>"
                    "<p><a href='%3'>%3</a></p><p>Includes TeX Gyre fonts (GUST Font License) and colour data from "
                    "matplotlib, ColorBrewer, cmocean, Scientific Colour Maps (F. Crameri), colorcet, Paul Tol and xkcd.</p>")
-                    .arg(QStringLiteral(CACTUS_VERSION), QString::fromLatin1(qVersion()), QStringLiteral(CACTUS_HOMEPAGE)));
+                    .arg(version, QString::fromLatin1(qVersion()), QStringLiteral(CACTUS_HOMEPAGE)));
     box.exec();
 }
 
