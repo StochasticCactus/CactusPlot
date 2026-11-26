@@ -28,10 +28,10 @@ sudo pacman -S base-devel cmake ninja git qt6-base qt6-svg
 Then:
 
 ```bash
-git clone https://github.com/StochasticCactus/CactusGui.git
+git clone https://github.com/StochasticCactus/CactusPlot.git
 ```
 ```bash
-cd CactusGui && cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cd CactusPlot && cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 ```
 ```bash
 cmake --build build
@@ -139,6 +139,39 @@ the wiki's Home). Edit the pages in `docs/`, never in the wiki: the next push to
 the wiki. Before the first run, open the Wiki tab and create any page once, so that the wiki
 exists. To preview the wiki locally, run `python3 tools/make_wiki.py /tmp/wiki`.
 
+### Homebrew and apt
+
+After each release, two more jobs in `build.yml` update the package repositories:
+
+- **Homebrew:** `packaging/homebrew/update-tap.sh` writes the cask (`packaging/homebrew/cactusplot.rb.in`
+  with the new version and checksum) to `Casks/cactusplot.rb` in the tap repository
+  `StochasticCactus/homebrew-tap`, so that `brew install --cask stochasticcactus/tap/cactusplot`
+  installs the new `.dmg`.
+- **apt:** the documentation workflow runs again. It downloads the `.deb` of every published release,
+  builds a signed apt repository with `packaging/apt/build-repo.sh` and publishes it with the
+  website, at `https://stochasticcactus.github.io/CactusPlot/apt`.
+
+One-time setup:
+
+1. Enable GitHub Pages (see above).
+2. Create a signing key for the apt repository, with no passphrase, and store the private key as the
+   repository secret `APT_GPG_PRIVATE_KEY` (**Settings ▸ Secrets and variables ▸ Actions**):
+
+    ```bash
+    gpg --batch --passphrase '' --quick-gen-key "CactusPlot packages" rsa4096 sign never
+    ```
+    ```bash
+    gpg --armor --export-secret-keys "CactusPlot packages"
+    ```
+
+    Keep a backup of the key. If it is lost, users have to download the new public key.
+3. Create a public repository `StochasticCactus/homebrew-tap` (the name must start with
+   `homebrew-`), with any first commit, for example a README.
+4. Create a fine-grained personal access token that only has access to `homebrew-tap`, with
+   **Contents: Read and write**, and store it as the repository secret `HOMEBREW_TAP_TOKEN`.
+
+Without the secrets the release still succeeds; the jobs only print a warning.
+
 ## Architecture
 
 ```
@@ -176,7 +209,7 @@ The main design choices:
 ## Contributing
 
 Bug reports, ideas and pull requests are welcome at
-<https://github.com/StochasticCactus/CactusGui>.
+<https://github.com/StochasticCactus/CactusPlot>.
 
 - Keep changes focused, and add a test when you fix a bug or add a feature (the existing tests show
   how to drive the interpreter, the renderer and the GUI).

@@ -18,7 +18,7 @@ Yes. It is free software under the GNU GPL version 2 or later. You can use it fo
 including commercial work and publications.
 
 **How do I cite it?**
-Cite the repository, `https://github.com/StochasticCactus/CactusGui`, with the version you used
+Cite the repository, `https://github.com/StochasticCactus/CactusPlot`, with the version you used
 (**Help ▸ About**).
 
 ## Plots
@@ -109,7 +109,7 @@ CactusPlot follows your desktop's scaling. On Linux you can override it with
 
 ## Reporting problems
 
-Please open an issue at <https://github.com/StochasticCactus/CactusGui/issues> with:
+Please open an issue at <https://github.com/StochasticCactus/CactusPlot/issues> with:
 
 - what you did and what happened;
 - the output of `cactusplot -version`;

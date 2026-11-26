@@ -54,14 +54,14 @@ saves **Grace/xmgrace projects**, speaks the **Grace command language**, can be 
 
 ## Install
 
-Pre-built packages are attached to every [release](https://github.com/StochasticCactus/CactusGui/releases):
+Pre-built packages are attached to every [release](https://github.com/StochasticCactus/CactusPlot/releases):
 
 | Platform | Package |
 |---|---|
 | **Windows 10/11** | `CactusPlot-*-win64.exe` installer (adds file associations) or the portable `.zip` |
-| **macOS 11+** (Apple silicon and Intel) | `CactusPlot-macOS-universal.dmg` — a native Cocoa app, no XQuartz needed |
+| **macOS 11+** (Apple silicon and Intel) | `brew install --cask stochasticcactus/tap/cactusplot`, or `CactusPlot-macOS-universal.dmg` — a native Cocoa app, no XQuartz needed |
 | **Any Linux** | `CactusPlot-x86_64.AppImage` (`chmod +x` and run), works on X11 and Wayland |
-| **Ubuntu, Debian, Mint, Pop!_OS** | `cactusplot_*_amd64.deb` (`sudo apt install ./cactusplot_*.deb`) |
+| **Ubuntu, Debian, Mint, Pop!_OS** | `sudo apt install cactusplot` after adding the [apt repository](docs/install.md#ubuntu-debian-linux-mint-pop_os-apt), or `cactusplot_*_amd64.deb` |
 | **Fedora, openSUSE** | `cactusplot-*.x86_64.rpm` (`sudo dnf install ./cactusplot-*.rpm`) |
 | **Arch / Manjaro** | `packaging/arch/PKGBUILD` (`makepkg -si`) |
 | **Flatpak (all distributions)** | `packaging/flatpak/org.cactusplot.CactusPlot.yml` |

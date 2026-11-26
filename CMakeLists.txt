@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.19)
 project(CactusPlot
     VERSION 0.9.0
     DESCRIPTION "Modern, cross-platform 2D scientific plotting (XMGrace successor)"
-    HOMEPAGE_URL "https://github.com/StochasticCactus/CactusGui"
+    HOMEPAGE_URL "https://github.com/StochasticCactus/CactusPlot"
     LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)

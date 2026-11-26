@@ -3,6 +3,10 @@ name: Documentation
 # Checks that the documentation builds (broken links fail the build). On main, in a public
 # repository, it also publishes the site with GitHub Pages; enable it once under
 # Settings > Pages > Source: GitHub Actions.
+#
+# The same site also hosts the apt repository (<site>/apt), built from the .deb files of all
+# published releases and signed with the APT_GPG_PRIVATE_KEY secret (skipped if the secret is not
+# set). The release job of build.yml runs this workflow after each release.
 on:
   push:
     paths: ["docs/**", "mkdocs.yml", ".github/workflows/docs.yml"]
@@ -20,6 +24,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-24.04
+    env:
+      APT_KEY: ${{ secrets.APT_GPG_PRIVATE_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -29,6 +35,28 @@ jobs:
         run: |
           pip install mkdocs-material==9.5.39
           mkdocs build --strict
+      - name: Build the apt repository
+        if: github.ref == 'refs/heads/main' && env.APT_KEY != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sudo apt-get install -y --no-install-recommends apt-utils
+          export GNUPGHOME="$RUNNER_TEMP/gnupg"
+          mkdir -m 700 "$GNUPGHOME"
+          printf '%s\n' "$APT_KEY" | gpg --batch --import
+          mkdir -p "$RUNNER_TEMP/debs"
+          for tag in $(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+                         --jq '.[] | select(.draft or .prerelease | not) | .tag_name'); do
+            gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern '*.deb' \
+              --dir "$RUNNER_TEMP/debs" || true
+          done
+          if ! ls "$RUNNER_TEMP"/debs/*.deb >/dev/null 2>&1; then
+            echo "::notice::No released .deb packages yet; the apt repository is not published."
+            exit 0
+          fi
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          packaging/apt/build-repo.sh "$RUNNER_TEMP/debs" site/apt \
+            "https://$owner.github.io/${GITHUB_REPOSITORY#*/}/apt"
       - uses: actions/upload-pages-artifact@v3
         if: github.ref == 'refs/heads/main' && !github.event.repository.private
         with:

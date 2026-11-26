@@ -18,14 +18,14 @@
     </ul>
   </description>
   <launchable type="desktop-id">org.cactusplot.CactusPlot.desktop</launchable>
-  <url type="homepage">https://github.com/StochasticCactus/CactusGui</url>
-  <url type="bugtracker">https://github.com/StochasticCactus/CactusGui/issues</url>
+  <url type="homepage">https://github.com/StochasticCactus/CactusPlot</url>
+  <url type="bugtracker">https://github.com/StochasticCactus/CactusPlot/issues</url>
   <developer id="org.cactusplot">
     <name>CactusPlot contributors</name>
   </developer>
   <screenshots>
     <screenshot type="default">
-      <image>https://raw.githubusercontent.com/StochasticCactus/CactusGui/main/docs/images/screenshot-light.png</image>
+      <image>https://raw.githubusercontent.com/StochasticCactus/CactusPlot/main/docs/images/screenshot-light.png</image>
       <caption>Main window</caption>
     </screenshot>
   </screenshots>

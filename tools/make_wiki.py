@@ -92,8 +92,7 @@ def convert(text: str, src: str, pages: dict[str, str], repo: str, images: set[s
 
     def target(url: str, is_image: bool) -> str:
         if re.match(r"^[a-z][a-z0-9+.-]*:", url, re.I) or url.startswith("//"):
-            return url.replace("github.com/StochasticCactus/CactusGui",
-                               f"github.com/{repo}")
+            return url
         if url.startswith("#"):
             return url
         path, _, anchor = url.partition("#")

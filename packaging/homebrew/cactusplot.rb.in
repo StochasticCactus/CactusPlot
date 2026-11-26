@@ -1,0 +1,38 @@
+# Homebrew cask for CactusPlot.
+#
+# Template: packaging/homebrew/update-tap.sh fills in @VERSION@, @SHA256@ and @REPO@ and copies the
+# result to Casks/cactusplot.rb in the tap repository (<owner>/homebrew-tap). The release workflow
+# does this on every release; do not edit the copy in the tap.
+cask "cactusplot" do
+  version "@VERSION@"
+  sha256 "@SHA256@"
+
+  url "https://github.com/@REPO@/releases/download/v#{version}/CactusPlot-macOS-universal.dmg"
+  name "CactusPlot"
+  desc "2D scientific plotting, compatible with Grace/xmgrace"
+  homepage "https://github.com/@REPO@"
+
+  livecheck do
+    url :url
+    strategy :github_latest
+  end
+
+  depends_on macos: ">= :big_sur"
+
+  app "CactusPlot.app"
+  binary "#{appdir}/CactusPlot.app/Contents/MacOS/CactusPlot", target: "cactusplot"
+  binary "#{appdir}/CactusPlot.app/Contents/MacOS/CactusPlot", target: "cactusbat"
+
+  # The app is signed ad hoc, not notarised: without this, macOS refuses to open it the first time.
+  postflight do
+    system_command "/usr/bin/xattr",
+                   args: ["-dr", "com.apple.quarantine", "#{appdir}/CactusPlot.app"]
+  end
+
+  zap trash: [
+    "~/Library/Application Support/CactusPlot",
+    "~/Library/Caches/CactusPlot",
+    "~/Library/Preferences/org.cactusplot.CactusPlot.plist",
+    "~/Library/Saved Application State/org.cactusplot.CactusPlot.savedState",
+  ]
+end

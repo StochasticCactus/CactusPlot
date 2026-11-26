@@ -1,10 +1,10 @@
-# Documentation site: https://stochasticcactus.github.io/CactusGui/
+# Documentation site: https://stochasticcactus.github.io/CactusPlot/
 # Preview locally:  pip install mkdocs-material==9.5.39 && mkdocs serve
 site_name: CactusPlot
 site_description: Modern, cross-platform 2D scientific plotting, compatible with Grace/xmgrace
-site_url: https://stochasticcactus.github.io/CactusGui/
-repo_url: https://github.com/StochasticCactus/CactusGui
-repo_name: StochasticCactus/CactusGui
+site_url: https://stochasticcactus.github.io/CactusPlot/
+repo_url: https://github.com/StochasticCactus/CactusPlot
+repo_name: StochasticCactus/CactusPlot
 edit_uri: edit/main/docs/
 copyright: CactusPlot is free software under the GNU GPL version 2 or later.
 

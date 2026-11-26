@@ -4,7 +4,7 @@ pkgver=0.9.0
 pkgrel=1
 pkgdesc="Beautiful 2D scientific plotting, compatible with Grace/xmgrace"
 arch=('x86_64' 'aarch64')
-url="https://github.com/StochasticCactus/CactusGui"
+url="https://github.com/StochasticCactus/CactusPlot"
 license=('GPL-2.0-or-later')
 depends=('qt6-base' 'qt6-svg' 'hicolor-icon-theme' 'shared-mime-info' 'desktop-file-utils')
 makedepends=('cmake' 'ninja')
@@ -15,7 +15,7 @@ source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
 sha256sums=('SKIP')
 
 build() {
-  cmake -S "CactusGui-$pkgver" -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCACTUS_BUILD_TESTS=OFF
+  cmake -S "CactusPlot-$pkgver" -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCACTUS_BUILD_TESTS=OFF
   cmake --build build
 }
 
