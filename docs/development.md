@@ -133,6 +133,12 @@ creates a GitHub release with all packages.
 repository it also publishes the documentation as a website with GitHub Pages. To enable that,
 choose **Settings ▸ Pages ▸ Source: GitHub Actions** in the repository once.
 
+`.github/workflows/wiki.yml` publishes the same pages to the repository's **Wiki** tab, using
+`tools/make_wiki.py` (one wiki page per entry in the `nav` of `mkdocs.yml`; `docs/index.md` becomes
+the wiki's Home). Edit the pages in `docs/`, never in the wiki: the next push to `main` overwrites
+the wiki. Before the first run, open the Wiki tab and create any page once, so that the wiki
+exists. To preview the wiki locally, run `python3 tools/make_wiki.py /tmp/wiki`.
+
 ## Architecture
 
 ```
