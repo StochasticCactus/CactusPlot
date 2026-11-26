@@ -1,0 +1,68 @@
+name: Wiki
+
+# Publishes the documentation in docs/ to the GitHub wiki (the "Wiki" tab), using
+# tools/make_wiki.py. Pull requests only check that the wiki can be generated.
+#
+# One-time setup: open the Wiki tab and create the first page (any content), so that the wiki's
+# git repository exists. The next run of this workflow replaces it with the generated pages.
+on:
+  push:
+    branches: [main]
+    paths: ["docs/**", "mkdocs.yml", "tools/make_wiki.py", ".github/workflows/wiki.yml"]
+  pull_request:
+    paths: ["docs/**", "mkdocs.yml", "tools/make_wiki.py", ".github/workflows/wiki.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wiki-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pyyaml==6.0.2
+      - name: Generate the wiki
+        run: python3 tools/make_wiki.py "$RUNNER_TEMP/wiki" --repo "$GITHUB_REPOSITORY"
+
+  publish:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write   # lets GITHUB_TOKEN push to the wiki repository
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pyyaml==6.0.2
+      - name: Clone the wiki
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          if ! git clone "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.wiki.git" "$RUNNER_TEMP/wiki"; then
+            echo "::error::The wiki repository does not exist yet. Open the Wiki tab, create the first page, then re-run this workflow."
+            exit 1
+          fi
+      - name: Generate the wiki
+        run: python3 tools/make_wiki.py "$RUNNER_TEMP/wiki" --repo "$GITHUB_REPOSITORY"
+      - name: Push the wiki
+        working-directory: ${{ runner.temp }}/wiki
+        run: |
+          git add -A
+          if git diff --cached --quiet; then
+            echo "The wiki is already up to date."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update wiki from ${GITHUB_SHA::7}"
+          git push origin HEAD
